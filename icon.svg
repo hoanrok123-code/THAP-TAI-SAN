@@ -1,13 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
   <defs>
-    <!-- Background Gradient -->
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#0b132b"/>
       <stop offset="50%" stop-color="#1c2541"/>
       <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
 
-    <!-- Layer Gradients (3D Lighting Effects) -->
     <linearGradient id="l5" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/>
     </linearGradient>
@@ -24,61 +22,31 @@
       <stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e3a8a"/>
     </linearGradient>
 
-    <!-- Text Gold Gradient -->
     <linearGradient id="goldText" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#fef08a"/>
       <stop offset="50%" stop-color="#f59e0b"/>
       <stop offset="100%" stop-color="#fef08a"/>
     </linearGradient>
 
-    <!-- Drop Shadow & Glow -->
     <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
       <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
     </filter>
   </defs>
 
-  <!-- Canvas Background -->
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  
-  <!-- Sleek Border -->
   <rect x="12" y="12" width="488" height="488" rx="100" fill="none" stroke="#ffffff" stroke-opacity="0.1" stroke-width="3"/>
 
-  <!-- Pyramid Asset Tower Group -->
   <g filter="url(#shadow)">
-    <!-- Layer 5 (Top) -->
     <path d="M 256,70 L 222,125 L 290,125 Z" fill="url(#l5)"/>
-    <path d="M 256,70 L 290,125 L 222,125 Z" fill="#ffffff" fill-opacity="0.15"/> <!-- Highlight -->
-
-    <!-- Layer 4 -->
+    <path d="M 256,70 L 290,125 L 222,125 Z" fill="#ffffff" fill-opacity="0.15"/>
     <polygon points="218,133 294,133 326,188 186,188" fill="url(#l4)"/>
-    
-    <!-- Layer 3 -->
     <polygon points="182,196 330,196 362,251 150,251" fill="url(#l3)"/>
-    
-    <!-- Layer 2 -->
     <polygon points="146,259 366,259 398,314 114,314" fill="url(#l2)"/>
-    
-    <!-- Layer 1 (Base) -->
     <polygon points="110,322 402,322 434,377 78,377" fill="url(#l1)"/>
   </g>
 
-  <!-- Sparkle Star at Peak -->
   <path d="M 256,42 L 260,54 L 272,58 L 260,62 L 256,74 L 252,62 L 240,58 L 252,54 Z" fill="#fef08a"/>
 
-  <!-- Professional Typography -->
-  <text x="256" y="428" 
-        text-anchor="middle" 
-        fill="url(#goldText)" 
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif" 
-        font-size="30" 
-        font-weight="900" 
-        letter-spacing="3">THÁP TÀI SẢN</text>
-
-  <text x="256" y="452" 
-        text-anchor="middle" 
-        fill="#94a3b8" 
-        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" 
-        font-size="12" 
-        font-weight="600" 
-        letter-spacing="5">FINANCIAL TOWER</text>
+  <text x="256" y="428" text-anchor="middle" fill="url(#goldText)" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="30" font-weight="900" letter-spacing="3">THÁP TÀI SẢN</text>
+  <text x="256" y="452" text-anchor="middle" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" letter-spacing="5">FINANCIAL TOWER</text>
 </svg>
