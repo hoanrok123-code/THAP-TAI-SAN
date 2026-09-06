@@ -1,15 +1,15 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.5 PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.6 PRO)
    =================================================== */
 
-const KEY = "thap-tai-san-v7.5";
+const KEY = "thap-tai-san-v7.6";
 
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
-  { id: 2, name: "2. Tài sản phải có", desc: "Quỹ dự phòng, tiền mặt, vàng", targetPct: 12.5, minPct: 10, maxPct: 15 },
-  { id: 3, name: "3. Tài sản thu nhập", desc: "BĐS cho thuê, cổ tức, trái phiếu, tiết kiệm", targetPct: 27.5, minPct: 20, maxPct: 35 },
-  { id: 4, name: "4. Tài sản tăng trưởng", desc: "Cổ phiếu, ETF, BĐS tăng giá", targetPct: 52.5, minPct: 45, maxPct: 60 },
-  { id: 5, name: "5. Tài sản đầu cơ", desc: "Crypto, BĐS lướt sóng, cơ hội rủi ro cao", targetPct: 7.5, minPct: 0, maxPct: 10 }
+  { id: 2, name: "2. Phải có", desc: "Quỹ dự phòng, tiền mặt, vàng", targetPct: 12.5, minPct: 10, maxPct: 15 },
+  { id: 3, name: "3. Thu nhập", desc: "BĐS cho thuê, cổ tức, trái phiếu, tiết kiệm", targetPct: 27.5, minPct: 20, maxPct: 35 },
+  { id: 4, name: "4. Tăng trưởng", desc: "Cổ phiếu, ETF, BĐS tăng giá", targetPct: 52.5, minPct: 45, maxPct: 60 },
+  { id: 5, name: "5. Đầu cơ", desc: "Crypto, BĐS lướt sóng, cơ hội rủi ro cao", targetPct: 7.5, minPct: 0, maxPct: 10 }
 ];
 
 let S = JSON.parse(localStorage.getItem(KEY) || "null") || {
@@ -81,14 +81,14 @@ function totals(){
   const totalExpenseMonthly = totalLivingExpense + totalDebtPaymentMonthly;
   
   const surplus = totalIncomeMonthly - totalExpenseMonthly;
-  const debtToIncomeRatio = totalIncomeMonthly > 0 ? (totalDebtPaymentMonthly / totalIncomeMonthly) * 100 : 0;
-  const expenseToIncomeRatio = totalIncomeMonthly > 0 ? (totalExpenseMonthly / totalIncomeMonthly) * 100 : 0;
+  const debtToIncomeRatio = totalIncomeMonthly > 0 ? (totalLoanInterest / totalIncomeMonthly) * 100 : 0;
+  const debtAndExpenseToIncomeRatio = totalIncomeMonthly > 0 ? ((totalLoanInterest + totalExpenseMonthly) / totalIncomeMonthly) * 100 : 0;
 
   return {
     assets, debt, net: assets - debt, passive,
     totalLoanInterest, totalPrincipal, totalDebtPaymentMonthly,
     totalIncomeMonthly, totalLivingExpense, totalExpenseMonthly, surplus,
-    debtToIncomeRatio, expenseToIncomeRatio
+    debtToIncomeRatio, debtAndExpenseToIncomeRatio
   };
 }
 
@@ -170,6 +170,15 @@ function dashboard(){
   const p4 = (l4 / totalVal) * 100;
   const p5 = (l5 / totalVal) * 100;
 
+  // Đánh giá tỷ lệ nợ/thu và (nợ+chi)/thu
+  let ratio1 = t.debtToIncomeRatio;
+  let eval1Text = ratio1 <= 30 ? "Tốt" : (ratio1 <= 40 ? "Cảnh báo" : "Không nên");
+  let eval1Class = ratio1 <= 30 ? "text-good" : (ratio1 <= 40 ? "text-warn" : "text-bad");
+
+  let ratio2 = t.debtAndExpenseToIncomeRatio;
+  let eval2Text = ratio2 <= 50 ? "Tốt" : (ratio2 <= 70 ? "Cảnh báo" : "Không nên");
+  let eval2Class = ratio2 <= 50 ? "text-good" : (ratio2 <= 70 ? "text-warn" : "text-bad");
+
   let currentAssetPeriod = S.assetPeriod || "1Y";
   let assetStartYear = S.assetStartYear || "2024";
   let currentCashPeriod = S.cashPeriod || "1Y";
@@ -206,10 +215,21 @@ function dashboard(){
         <div class="metric dark"><div class="label">Tổng nợ</div><div class="v">${money(t.debt)}</div></div>
       </div>
 
-      <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; text-align:center;">
+      <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; text-align:center; margin-bottom: 8px;">
         <div><div style="font-size:9px;opacity:0.8">TỔNG THU</div><div style="font-size:11px;font-weight:700;color:#34d399">${money(t.totalIncomeMonthly)}</div></div>
         <div><div style="font-size:9px;opacity:0.8">TỔNG CHI</div><div style="font-size:11px;font-weight:700;color:#f87171">${money(t.totalExpenseMonthly)}</div></div>
         <div><div style="font-size:9px;opacity:0.8">LÃI VAY</div><div style="font-size:11px;font-weight:700;color:#fbbf24">${money(t.totalLoanInterest)}</div></div>
+      </div>
+
+      <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 6px; font-size: 10px; opacity: 0.95; display: flex; flex-direction: column; gap: 3px;">
+        <div style="display:flex; justify-content:space-between;">
+          <span>• Nợ / Thu (${pct(ratio1)}):</span>
+          <b class="${eval1Class}">${eval1Text}</b>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>• (Nợ + Chi) / Thu (${pct(ratio2)}):</span>
+          <b class="${eval2Class}">${eval2Text}</b>
+        </div>
       </div>
     </div>
 
@@ -281,35 +301,35 @@ function dashboard(){
             <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e3a8a"/></linearGradient>
           </defs>
 
-          <!-- Layer 5: Chóp cụt đầu cơ -->
+          <!-- Layer 5 -->
           <g class="pyramid-layer">
             <polygon points="175,10 225,10 248,55 152,55" fill="url(#g5)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
             <text x="200" y="27" fill="#ffffff" font-size="8.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">5. ĐẦU CƠ</text>
             <text x="200" y="41" fill="rgba(255,255,255,0.95)" font-size="7.5" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p5)} (Max 10%)</text>
           </g>
 
-          <!-- Layer 4: Tăng trưởng -->
+          <!-- Layer 4 -->
           <g class="pyramid-layer">
             <polygon points="149,59 251,59 289,114 111,114" fill="url(#g4)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <text x="200" y="80" fill="#ffffff" font-size="9.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">4. TÀI SẢN TĂNG TRƯỞNG</text>
+            <text x="200" y="80" fill="#ffffff" font-size="9.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">4. TĂNG TRƯỞNG</text>
             <text x="200" y="96" fill="rgba(255,255,255,0.95)" font-size="8.5" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p4)} (45-60%)</text>
           </g>
 
-          <!-- Layer 3: Thu nhập -->
+          <!-- Layer 3 -->
           <g class="pyramid-layer">
             <polygon points="108,118 292,118 331,173 69,173" fill="url(#g3)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <text x="200" y="139" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">3. TÀI SẢN THU NHẬP</text>
+            <text x="200" y="139" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">3. THU NHẬP</text>
             <text x="200" y="155" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p3)} (20-35%)</text>
           </g>
 
-          <!-- Layer 2: Phải có -->
+          <!-- Layer 2 -->
           <g class="pyramid-layer">
             <polygon points="66,177 334,177 373,232 27,232" fill="url(#g2)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <text x="200" y="198" fill="#ffffff" font-size="10.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">2. TÀI SẢN PHẢI CÓ</text>
+            <text x="200" y="198" fill="#ffffff" font-size="10.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">2. PHẢI CÓ</text>
             <text x="200" y="214" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p2)} (10-15%)</text>
           </g>
 
-          <!-- Layer 1: Năng lực cá nhân -->
+          <!-- Layer 1 -->
           <g class="pyramid-layer">
             <polygon points="24,236 376,236 400,296 0,296" fill="url(#g1)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
             <text x="200" y="259" fill="#ffffff" font-size="10" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">1. NỀN TẢNG NĂNG LỰC CÁ NHÂN</text>
