@@ -2,9 +2,9 @@
    ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP)
    =================================================== */
 
-const KEY = "thap-tai-san-v5";
+const KEY = "thap-tai-san-v6";
 
-// Config cấu trúc các tầng tháp tài sản (ID 1 -> 5 đồng bộ toàn hệ thống)
+// Config cấu trúc các tầng tháp tài sản
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
   { id: 2, name: "2. Tài sản phải có", desc: "Quỹ dự phòng (12-18 tháng chi phí), tiền mặt", targetPct: 12.5, minPct: 10, maxPct: 15 },
@@ -13,7 +13,6 @@ const LAYERS_CONFIG = [
   { id: 5, name: "5. Tài sản đầu cơ", desc: "Crypto, BĐS lướt sóng, cơ hội rủi ro cao", targetPct: 7.5, minPct: 0, maxPct: 10 }
 ];
 
-// Dùng let thay const để cho phép ghi đè khi Restore/Import JSON
 let S = JSON.parse(localStorage.getItem(KEY) || "null") || {
   assets: [
     { id: "a1", name: "Quỹ dự phòng khẩn cấp", type: "cash", value: 300000000, rate: 0, cashflow: 0, debt: 0, layer: 2 },
@@ -28,7 +27,7 @@ let S = JSON.parse(localStorage.getItem(KEY) || "null") || {
   goals: [
     { id: "g1", name: "Tự do tài chính 15 tỷ", target: 15000000000, deadline: "2033-09-01", assignedAssetIds: ["a3", "a5"], externalCapital: 1000000000 }
   ],
-  events: [], tab: "dashboard", lastCalc: new Date().toISOString()
+  events: [], tab: "dashboard", assetPeriod: "3Y", cashPeriod: "3Y", lastCalc: new Date().toISOString()
 };
 
 function save(){ S.lastCalc = new Date().toISOString(); localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -93,12 +92,12 @@ function totals(){
   
   const debtToIncomeRatio = totalIncomeMonthly > 0 ? (totalDebtPaymentMonthly / totalIncomeMonthly) * 100 : 0;
   const expenseToIncomeRatio = totalIncomeMonthly > 0 ? (totalExpenseMonthly / totalIncomeMonthly) * 100 : 0;
-  const coverageRatio = (totalLivingExpense + totalLoanInterest) > 0 ? (passive / (totalLivingExpense + totalLoanInterest)) * 100 : 0;
 
   return {
     assets, debt, net: assets - debt, passive,
+    totalLoanInterest, totalPrincipal, totalDebtPaymentMonthly,
     totalIncomeMonthly, totalLivingExpense, totalExpenseMonthly, surplus,
-    debtToIncomeRatio, expenseToIncomeRatio, coverageRatio
+    debtToIncomeRatio, expenseToIncomeRatio
   };
 }
 
@@ -108,11 +107,6 @@ function nav(){
 }
 
 function render(){ nav(); ({dashboard, tower, assets, cash, goals}[S.tab] || dashboard)(); }
-
-function future(months, initial = totals().net, monthly = Math.max(0, totals().surplus), annual = S.annualReturn){
-  const r = Math.pow(1 + annual / 100, 1 / 12) - 1;
-  return initial * Math.pow(1 + r, months) + monthly * (r ? ((Math.pow(1 + r, months) - 1) / r) : months);
-}
 
 function goalPlan(g){
   const m = monthsTo(g.deadline);
@@ -164,6 +158,9 @@ function dashboard(){
   const p4 = (l4 / totalVal) * 100;
   const p5 = (l5 / totalVal) * 100;
 
+  let currentAssetPeriod = S.assetPeriod || "3Y";
+  let currentCashPeriod = S.cashPeriod || "3Y";
+
   document.getElementById("app").innerHTML = `
     <style>
       .pyramid-container { width: 100%; max-width: 420px; margin: 16px auto 24px; }
@@ -172,6 +169,15 @@ function dashboard(){
       .pyramid-layer:hover { opacity: 0.95; transform: translateY(-2px); }
       .pyramid-label { fill: #ffffff; font-size: 11px; font-weight: 800; text-anchor: middle; font-family: -apple-system, sans-serif; pointer-events: none; }
       .pyramid-sub { fill: rgba(255, 255, 255, 0.9); font-size: 9.5px; font-weight: 600; text-anchor: middle; font-family: -apple-system, sans-serif; pointer-events: none; }
+      
+      .period-selector { display: flex; gap: 3px; background: #f1f5f9; padding: 3px; border-radius: 8px; flex-wrap: wrap; }
+      .period-btn { border: 0; background: transparent; color: #64748b; font-size: 10px; padding: 3px 6px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+      .period-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+      
+      .chart-legend { display: flex; gap: 12px; justify-content: center; margin-top: 10px; font-size: 11px; font-weight: 600; flex-wrap: wrap; }
+      .legend-item { display: flex; align-items: center; gap: 5px; }
+      .legend-color { width: 12px; height: 3px; border-radius: 2px; }
+      .legend-bar-color { width: 10px; height: 10px; border-radius: 2px; }
     </style>
 
     <div class="card hero">
@@ -198,6 +204,56 @@ function dashboard(){
           <span class="badge ${expBadge.class}">${expBadge.text}</span>
           <div class="small muted" style="margin-top:4px">Mục tiêu: ≤ 50%</div>
         </div>
+      </div>
+    </div>
+
+    <!-- BIỂU ĐỒ 1: CỘT TÀI SẢN RÒNG -->
+    <div class="card">
+      <div class="sectionhead">
+        <div>
+          <h3>Dự phóng Tài sản Ròng</h3>
+          <div class="small muted">Biểu đồ Cột</div>
+        </div>
+        <div class="period-selector">
+          <button class="period-btn ${currentAssetPeriod==='3M'?'active':''}" onclick="setAssetPeriod('3M')">Quý</button>
+          <button class="period-btn ${currentAssetPeriod==='6M'?'active':''}" onclick="setAssetPeriod('6M')">6Th</button>
+          <button class="period-btn ${currentAssetPeriod==='1Y'?'active':''}" onclick="setAssetPeriod('1Y')">1Năm</button>
+          <button class="period-btn ${currentAssetPeriod==='3Y'?'active':''}" onclick="setAssetPeriod('3Y')">3Năm</button>
+          <button class="period-btn ${currentAssetPeriod==='5Y'?'active':''}" onclick="setAssetPeriod('5Y')">5Năm</button>
+          <button class="period-btn ${currentAssetPeriod==='10Y'?'active':''}" onclick="setAssetPeriod('10Y')">10Năm</button>
+        </div>
+      </div>
+      
+      <canvas id="assetBarChart"></canvas>
+      
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-bar-color" style="background:#3b82f6"></div><span style="color:#1e40af">Giá trị tài sản ròng (Tỷ VNĐ)</span></div>
+      </div>
+    </div>
+
+    <!-- BIỂU ĐỒ 2: DÂY DÒNG TIỀN CHI TIẾT -->
+    <div class="card">
+      <div class="sectionhead">
+        <div>
+          <h3>Dự phóng Dòng tiền</h3>
+          <div class="small muted">Biểu đồ Dây (3 Thuộc tính)</div>
+        </div>
+        <div class="period-selector">
+          <button class="period-btn ${currentCashPeriod==='3M'?'active':''}" onclick="setCashPeriod('3M')">Quý</button>
+          <button class="period-btn ${currentCashPeriod==='6M'?'active':''}" onclick="setCashPeriod('6M')">6Th</button>
+          <button class="period-btn ${currentCashPeriod==='1Y'?'active':''}" onclick="setCashPeriod('1Y')">1Năm</button>
+          <button class="period-btn ${currentCashPeriod==='3Y'?'active':''}" onclick="setCashPeriod('3Y')">3Năm</button>
+          <button class="period-btn ${currentCashPeriod==='5Y'?'active':''}" onclick="setCashPeriod('5Y')">5Năm</button>
+          <button class="period-btn ${currentCashPeriod==='10Y'?'active':''}" onclick="setCashPeriod('10Y')">10Năm</button>
+        </div>
+      </div>
+      
+      <canvas id="cashLineChart"></canvas>
+      
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-color" style="background:#10b981"></div><span style="color:#065f46">Tổng thu nhập</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div><span style="color:#991b1b">Tổng chi phí (gốc+lãi)</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span style="color:#92400e">Lãi vay phải trả</span></div>
       </div>
     </div>
 
@@ -281,7 +337,7 @@ function dashboard(){
         <div class="metric"><div class="label">Tổng thu nhập</div><div class="v">${money(t.totalIncomeMonthly)}</div></div>
         <div class="metric"><div class="label">Tổng chi phí + Trả nợ</div><div class="v">${money(t.totalExpenseMonthly)}</div></div>
         <div class="metric"><div class="label">Dòng tiền dư/tháng</div><div class="v">${money(t.surplus)}</div></div>
-        <div class="metric"><div class="label">Thu nhập thụ động</div><div class="v">${money(t.passive)}</div></div>
+        <div class="metric"><div class="label">Lãi vay phải trả</div><div class="v">${money(t.totalLoanInterest)}</div></div>
       </div>
     </div>
 
@@ -300,8 +356,6 @@ function dashboard(){
       <p class="small muted" style="margin-top:10px">Hạn: ${datef(g.deadline)} • Vốn gán sẵn: ${money(p.initialCap)}</p>
     </div>` : `<div class="card"><h3>Chưa có mục tiêu</h3><button onclick="goalForm()">+ Tạo mục tiêu</button></div>`}
 
-    <div class="card"><div class="sectionhead"><h3>Dự phóng 7 năm</h3></div><canvas id="chart"></canvas></div>
-    
     <div class="card">
       <div class="sectionhead"><h3>Cập nhật hệ thống</h3></div>
       <div class="actions">
@@ -310,7 +364,177 @@ function dashboard(){
       </div>
     </div>
   `;
-  draw("chart");
+
+  drawAssetBarChart("assetBarChart", currentAssetPeriod);
+  drawCashLineChart("cashLineChart", currentCashPeriod);
+}
+
+function setAssetPeriod(p) { S.assetPeriod = p; save(); render(); }
+function setCashPeriod(p) { S.cashPeriod = p; save(); render(); }
+
+// 1. BIỂU ĐỒ CỘT TÀI SẢN RÒNG
+function drawAssetBarChart(id, periodKey = "3Y") {
+  let canvas = document.getElementById(id);
+  if (!canvas) return;
+
+  let periodMap = { "3M": 3, "6M": 6, "1Y": 12, "3Y": 36, "5Y": 60, "10Y": 120 };
+  let totalMonths = periodMap[periodKey] || 36;
+  let steps = 6;
+
+  let t = totals();
+  let r = Math.pow(1 + (S.annualReturn || 10) / 100, 1 / 12) - 1;
+  let baseNet = t.net;
+  let monthlySurplus = t.surplus;
+
+  let pts = [];
+  for (let i = 0; i <= steps; i++) {
+    let m = Math.round((totalMonths / steps) * i);
+    let netVal = baseNet * Math.pow(1 + r, m) + (monthlySurplus > 0 ? monthlySurplus * (r ? ((Math.pow(1 + r, m) - 1) / r) : m) : 0);
+    pts.push({ m, val: netVal / 1e9 }); // Đơn vị Tỷ VNĐ
+  }
+
+  let d = window.devicePixelRatio || 1;
+  let w = canvas.clientWidth;
+  let h = 200;
+  canvas.width = w * d;
+  canvas.height = h * d;
+  let ctx = canvas.getContext("2d");
+  ctx.scale(d, d);
+
+  let pLeft = 40, pRight = 20, pTop = 25, pBottom = 25;
+  let plotW = w - pLeft - pRight;
+  let plotH = h - pTop - pBottom;
+
+  let maxVal = Math.max(...pts.map(p => p.val), 0.1);
+  let minVal = Math.min(0, ...pts.map(p => p.val));
+
+  // Lưới ngang
+  ctx.strokeStyle = "#f1f5f9";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    let y = pTop + (plotH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pLeft, y); ctx.lineTo(w - pRight, y); ctx.stroke();
+  }
+
+  // Vẽ Cột
+  let barWidth = (plotW / (steps + 1)) * 0.5;
+  pts.forEach((p, i) => {
+    let x = pLeft + (i + 0.5) * (plotW / (steps + 1));
+    let yVal = pTop + plotH - ((p.val - minVal) / (maxVal - minVal || 1)) * plotH;
+    let yZero = pTop + plotH - ((0 - minVal) / (maxVal - minVal || 1)) * plotH;
+    
+    let barH = Math.abs(yVal - yZero);
+    let barY = p.val >= 0 ? yVal : yZero;
+
+    ctx.fillStyle = "#3b82f6";
+    ctx.fillRect(x - barWidth / 2, barY, barWidth, barH);
+
+    // Giá trị đầu cột
+    ctx.font = "9px -apple-system, sans-serif";
+    ctx.fillStyle = "#1e40af";
+    ctx.textAlign = "center";
+    ctx.fillText(p.val.toFixed(1) + "Tỷ", x, barY - 4);
+
+    // Trục X
+    let label = p.m === 0 ? "Hiện tại" : (p.m < 12 ? `${p.m} Th` : `${(p.m/12).toFixed(p.m % 12 === 0 ? 0 : 1)} Năm`);
+    ctx.fillStyle = "#64748b";
+    ctx.fillText(label, x, h - 6);
+  });
+}
+
+// 2. BIỂU ĐỒ DÂY DÒNG TIỀN (3 ĐƯỜNG: TỔNG THU, TỔNG CHI, LÃI VAY)
+function drawCashLineChart(id, periodKey = "3Y") {
+  let canvas = document.getElementById(id);
+  if (!canvas) return;
+
+  let periodMap = { "3M": 3, "6M": 6, "1Y": 12, "3Y": 36, "5Y": 60, "10Y": 120 };
+  let totalMonths = periodMap[periodKey] || 36;
+  let steps = 6;
+
+  let t = totals();
+  let r = Math.pow(1 + (S.annualReturn || 10) / 100, 1 / 12) - 1;
+
+  let incPts = [], expPts = [], interestPts = [];
+
+  for (let i = 0; i <= steps; i++) {
+    let m = Math.round((totalMonths / steps) * i);
+    
+    // Thu nhập tăng trưởng theo tài sản tích lũy
+    let netVal = t.net * Math.pow(1 + r, m) + (t.surplus > 0 ? t.surplus * (r ? ((Math.pow(1 + r, m) - 1) / r) : m) : 0);
+    let addedPassive = Math.max(0, netVal - t.net) * (r / 2);
+    
+    let inc = (t.totalIncomeMonthly + addedPassive) / 1e6; // Triệu VNĐ
+    let exp = t.totalExpenseMonthly / 1e6; // Triệu VNĐ
+    let interest = t.totalLoanInterest / 1e6; // Triệu VNĐ
+
+    incPts.push(inc);
+    expPts.push(exp);
+    interestPts.push(interest);
+  }
+
+  let d = window.devicePixelRatio || 1;
+  let w = canvas.clientWidth;
+  let h = 200;
+  canvas.width = w * d;
+  canvas.height = h * d;
+  let ctx = canvas.getContext("2d");
+  ctx.scale(d, d);
+
+  let pLeft = 35, pRight = 20, pTop = 20, pBottom = 25;
+  let plotW = w - pLeft - pRight;
+  let plotH = h - pTop - pBottom;
+
+  let maxVal = Math.max(...incPts, ...expPts, ...interestPts, 1);
+
+  const getY = (v) => pTop + plotH - (v / maxVal) * plotH;
+
+  // Lưới ngang
+  ctx.strokeStyle = "#f1f5f9";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    let y = pTop + (plotH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pLeft, y); ctx.lineTo(w - pRight, y); ctx.stroke();
+  }
+
+  // Hàm vẽ 1 đường dây
+  const drawLine = (pts, color) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    pts.forEach((v, i) => {
+      let x = pLeft + i * (plotW / steps);
+      let y = getY(v);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    pts.forEach((v, i) => {
+      let x = pLeft + i * (plotW / steps);
+      let y = getY(v);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    });
+  };
+
+  // Vẽ 3 Dây
+  drawLine(incPts, "#10b981");      // Tổng thu (Xanh lá)
+  drawLine(expPts, "#ef4444");      // Tổng chi (Đỏ)
+  drawLine(interestPts, "#f59e0b"); // Lãi vay (Vàng)
+
+  // Trục Y max
+  ctx.font = "9px -apple-system, sans-serif";
+  ctx.fillStyle = "#64748b";
+  ctx.textAlign = "left";
+  ctx.fillText(maxVal.toFixed(0) + "M", 2, pTop + 8);
+
+  // Trục X mốc thời gian
+  ctx.textAlign = "center";
+  for (let i = 0; i <= steps; i++) {
+    let m = Math.round((totalMonths / steps) * i);
+    let x = pLeft + i * (plotW / steps);
+    let label = m === 0 ? "Hiện tại" : (m < 12 ? `${m} Th` : `${(m/12).toFixed(m % 12 === 0 ? 0 : 1)} N`);
+    ctx.fillText(label, x, h - 6);
+  }
 }
 
 function tower(){
@@ -709,7 +933,7 @@ function saveLoan(i){
 }
 
 function exportData(){
-  let p = { app: "Tháp Tài Sản", version: "5.5", exportedAt: new Date().toISOString(), data: S };
+  let p = { app: "Tháp Tài Sản", version: "6.0", exportedAt: new Date().toISOString(), data: S };
   let b = new Blob([JSON.stringify(p, null, 2)], { type: "application/json" });
   let u = URL.createObjectURL(b);
   let a = document.createElement("a");
@@ -731,30 +955,6 @@ function importData(e){
     } catch { alert("File backup không hợp lệ."); }
   };
   r.readAsText(f);
-}
-
-function draw(id){
-  let c = document.getElementById(id); if (!c) return;
-  let d = devicePixelRatio || 1, w = c.clientWidth, h = 180;
-  c.width = w * d; c.height = h * d;
-  let x = c.getContext("2d"); x.scale(d, d);
-
-  let pts = []; for (let m = 0; m <= 84; m += 6) pts.push(future(m) / 1e9);
-  let max = Math.max(...pts, 1), p = 25;
-
-  x.strokeStyle = "#3b82f6"; x.lineWidth = 2;
-  x.beginPath();
-  pts.forEach((v, i) => {
-    let X = p + i * (w - 2 * p) / (pts.length - 1);
-    let Y = h - p - v / max * (h - 2 * p);
-    i ? x.lineTo(X, Y) : x.moveTo(X, Y);
-  });
-  x.stroke();
-
-  x.fillStyle = "#64748b"; x.font = "11px -apple-system, sans-serif";
-  x.fillText("0", 4, h - p + 4);
-  x.fillText(max.toFixed(1) + " tỷ", 4, 14);
-  x.fillText("7 năm", w - p - 25, h - 5);
 }
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
