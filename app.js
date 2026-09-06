@@ -4,7 +4,7 @@
 
 const KEY = "thap-tai-san-v5";
 
-// Config cấu trúc các tầng tháp tài sản (Sửa ID 1 -> 5 đồng bộ toàn hệ thống)
+// Config cấu trúc các tầng tháp tài sản (ID 1 -> 5 đồng bộ toàn hệ thống)
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
   { id: 2, name: "2. Tài sản phải có", desc: "Quỹ dự phòng (12-18 tháng chi phí), tiền mặt", targetPct: 12.5, minPct: 10, maxPct: 15 },
@@ -13,6 +13,7 @@ const LAYERS_CONFIG = [
   { id: 5, name: "5. Tài sản đầu cơ", desc: "Crypto, BĐS lướt sóng, cơ hội rủi ro cao", targetPct: 7.5, minPct: 0, maxPct: 10 }
 ];
 
+// Dùng let thay const để cho phép ghi đè khi Restore/Import JSON
 let S = JSON.parse(localStorage.getItem(KEY) || "null") || {
   assets: [
     { id: "a1", name: "Quỹ dự phòng khẩn cấp", type: "cash", value: 300000000, rate: 0, cashflow: 0, debt: 0, layer: 2 },
