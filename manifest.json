@@ -1,17 +1,15 @@
 {
-  "name": "Tháp Tài Sản",
   "short_name": "Tháp Tài Sản",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#f3f5f8",
-  "theme_color": "#0f172a",
-  "lang": "vi",
+  "name": "Quản Lý Tháp Tài Sản Cá Nhân",
   "icons": [
     {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "src": "thap-tai-san.jpg",
+      "type": "image/jpeg",
+      "sizes": "192x192 512x512"
     }
-  ]
+  ],
+  "start_url": "./index.html",
+  "background_color": "#ffffff",
+  "theme_color": "#1e3a8a",
+  "display": "standalone"
 }
