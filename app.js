@@ -1,8 +1,8 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.7 PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.8 PRO)
    =================================================== */
 
-const KEY = "thap-tai-san-v7.7";
+const KEY = "thap-tai-san-v7.8";
 
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
@@ -170,14 +170,14 @@ function dashboard(){
   const p4 = (l4 / totalVal) * 100;
   const p5 = (l5 / totalVal) * 100;
 
-  // Đánh giá tỷ lệ nợ/thu và (nợ+chi)/thu
+  // Đánh giá tỷ lệ nợ/thu và (nợ+chi)/thu theo mẫu tối giản mới
   let ratio1 = t.debtToIncomeRatio;
   let eval1Text = ratio1 <= 30 ? "Tốt" : (ratio1 <= 40 ? "Cảnh báo" : "Không nên");
-  let eval1Class = ratio1 <= 30 ? "text-good" : (ratio1 <= 40 ? "text-warn" : "text-bad");
+  let eval1Class = ratio1 <= 30 ? "badge-good" : (ratio1 <= 40 ? "badge-warn" : "badge-bad");
 
   let ratio2 = t.debtAndExpenseToIncomeRatio;
   let eval2Text = ratio2 <= 50 ? "Tốt" : (ratio2 <= 70 ? "Cảnh báo" : "Không nên");
-  let eval2Class = ratio2 <= 50 ? "text-good" : (ratio2 <= 70 ? "text-warn" : "text-bad");
+  let eval2Class = ratio2 <= 50 ? "badge-good" : (ratio2 <= 70 ? "badge-warn" : "badge-bad");
 
   let currentAssetPeriod = S.assetPeriod || "1Y";
   let assetStartYear = S.assetStartYear || "2024";
@@ -204,6 +204,10 @@ function dashboard(){
       .legend-bar-color { width: 10px; height: 10px; border-radius: 2px; }
       canvas { width: 100% !important; height: 210px !important; display: block; }
       .no-data-msg { text-align: center; padding: 60px 0; color: #94a3b8; font-size: 13px; font-weight: 600; }
+
+      .badge-good { background: #d1fae5; color: #065f46; padding: 3px 12px; border-radius: 12px; font-weight: 700; font-size: 12px; display: inline-block; }
+      .badge-warn { background: #fef3c7; color: #92400e; padding: 3px 12px; border-radius: 12px; font-weight: 700; font-size: 12px; display: inline-block; }
+      .badge-bad { background: #fee2e2; color: #991b1b; padding: 3px 12px; border-radius: 12px; font-weight: 700; font-size: 12px; display: inline-block; }
     </style>
 
     <div class="card hero">
@@ -220,15 +224,23 @@ function dashboard(){
         <div><div style="font-size:9px;opacity:0.8">TỔNG DÒNG TIỀN CHI HÀNG THÁNG</div><div style="font-size:11px;font-weight:700;color:#f87171">${money(t.totalExpenseMonthly)}</div></div>
         <div><div style="font-size:9px;opacity:0.8">TỔNG DÒNG TIỀN NỢ TRẢ HÀNG THÁNG</div><div style="font-size:11px;font-weight:700;color:#fbbf24">${money(t.totalLoanInterest)}</div></div>
       </div>
+    </div>
 
-      <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; font-size: 12px; font-weight: 700; display: flex; flex-direction: column; gap: 6px; text-align: center;">
-        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 4px;">
-          <span style="font-size:11px;">• Tỉ lệ trả nợ hàng tháng / Tổng dòng tiền thu về hàng tháng (${pct(ratio1)}):</span>
-          <b class="${eval1Class}" style="font-size:13px; text-transform:uppercase;">${eval1Text}</b>
+    <!-- Khối Chỉ số An toàn & Dòng tiền tối giản giống yêu cầu -->
+    <div class="card" style="background:#ffffff; color:#0f172a;">
+      <h3 style="font-size: 15px; font-weight: 800; margin-bottom: 12px; color: #0f172a;">Chỉ số An toàn & Dòng tiền</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; background: #f8fafc;">
+          <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Nợ NH / Dòng thu</div>
+          <div style="font-size: 20px; font-weight: 900; color: #0f172a; margin-bottom: 8px;">${pct(ratio1)}</div>
+          <div style="margin-bottom: 6px;"><span class="${eval1Class}">${eval1Text}</span></div>
+          <div style="font-size: 10px; color: #64748b;">Mục tiêu: ≤ 30%</div>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 4px;">
-          <span style="font-size:11px;">• Tỉ lệ (trả nợ + chi tiêu) hàng tháng / Tổng dòng tiền thu về hàng tháng (${pct(ratio2)}):</span>
-          <b class="${eval2Class}" style="font-size:13px; text-transform:uppercase;">${eval2Text}</b>
+        <div style="border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; text-align: center; background: #f8fafc;">
+          <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 4px;">Tổng chi / Dòng thu</div>
+          <div style="font-size: 20px; font-weight: 900; color: #0f172a; margin-bottom: 8px;">${pct(ratio2)}</div>
+          <div style="margin-bottom: 6px;"><span class="${eval2Class}">${eval2Text}</span></div>
+          <div style="font-size: 10px; color: #64748b;">Mục tiêu: ≤ 50%</div>
         </div>
       </div>
     </div>
