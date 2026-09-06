@@ -1,8 +1,8 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v8.0 PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v8.1 FULL PRO)
    =================================================== */
 
-const KEY = "thap-tai-san-v8.0";
+const KEY = "thap-tai-san-v8.1";
 
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
@@ -913,15 +913,16 @@ function goals(){
 
   if (totalGoalsCount > 0) {
     S.goals.forEach(g => {
-      let targetVal = +g.targetValue || 0;
+      let goalItemsVal = (g.items || []).reduce((sum, item) => sum + (+item.value || 0), 0);
+      let targetVal = goalItemsVal; 
+      
       let startDate = g.startDate || new Date().toISOString().slice(0, 10);
       let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
       let startMs = new Date(startDate + "T00:00:00").getTime();
       let targetMs = new Date(targetDate + "T00:00:00").getTime();
       let diffMonths = Math.max(1, Math.round((targetMs - startMs) / (1000 * 60 * 60 * 24 * 30.44)));
-      let extraAmount = +g.extraAmount || 0; 
       let totalAccumulatedCashflow = netMonthlyCashflow * diffMonths;
-      let totalProjectedResources = totalAccumulatedCashflow + extraAmount + t.net;
+      let totalProjectedResources = totalAccumulatedCashflow + t.net;
 
       totalTargetSum += targetVal;
       totalAchievedSum += Math.min(targetVal, Math.max(0, totalProjectedResources));
@@ -934,7 +935,7 @@ function goals(){
       <div class="sectionhead">
         <div>
           <h2>Mục Tiêu Tài Chính</h2>
-          <p class="small muted">Hoạch định giá trị, thời gian và tính toán dòng tiền/tài sản cần bổ sung.</p>
+          <p class="small muted">Hoạch định danh mục tài sản/nợ mục tiêu, thời gian và tính toán dòng tiền.</p>
         </div>
         <button onclick="goalForm()">+ Thêm mục tiêu</button>
       </div>
@@ -944,7 +945,7 @@ function goals(){
   if (!S.goals || S.goals.length === 0) {
     h += `<div class="card"><div class="small muted" style="text-align:center;padding:20px 0">Chưa có mục tiêu tài chính nào được thiết lập. Hãy bấm "+ Thêm mục tiêu" để bắt đầu.</div></div>`;
   } else {
-    // 🌟 PHẦN TỔNG QUAN THEO DÕI MỤC TIÊU (HIỆN ĐÚNG CÁC THÔNG SỐ: TÊN, GIÁ TRỊ, ĐÃ CÓ, CÒN THIẾU, TỈ LỆ)
+    // 🌟 PHẦN TỔNG QUAN THEO DÕI MỤC TIÊU
     h += `
       <div class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -966,15 +967,15 @@ function goals(){
     `;
 
     S.goals.forEach((g) => {
-      let targetVal = +g.targetValue || 0;
+      let goalItemsVal = (g.items || []).reduce((sum, item) => sum + (+item.value || 0), 0);
+      let targetVal = goalItemsVal;
       let startDate = g.startDate || new Date().toISOString().slice(0, 10);
       let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
       let startMs = new Date(startDate + "T00:00:00").getTime();
       let targetMs = new Date(targetDate + "T00:00:00").getTime();
       let diffMonths = Math.max(1, Math.round((targetMs - startMs) / (1000 * 60 * 60 * 24 * 30.44)));
-      let extraAmount = +g.extraAmount || 0; 
       let totalAccumulatedCashflow = netMonthlyCashflow * diffMonths;
-      let totalProjectedResources = totalAccumulatedCashflow + extraAmount + t.net;
+      let totalProjectedResources = totalAccumulatedCashflow + t.net;
 
       let achievedVal = Math.max(0, totalProjectedResources);
       let gap = targetVal - achievedVal;
@@ -992,7 +993,7 @@ function goals(){
           </div>
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; text-align: center; background: #f8fafc; padding: 6px; border-radius: 6px;">
             <div>
-              <div style="color: #64748b; font-size: 9px; font-weight: 600;">GIÁ TRỊ MỤC TIÊU</div>
+              <div style="color: #64748b; font-size: 9px; font-weight: 600;">TỔNG GIÁ TRỊ MỤC TIÊU</div>
               <div style="font-weight: 800; color: #0f172a;">${money(targetVal)}</div>
             </div>
             <div>
@@ -1013,9 +1014,10 @@ function goals(){
       </div>
     `;
 
-    // CHI TIẾT TỪNG MỤC TIÊU
+    // CHI TIẾT TỪNG MỤC TIÊU VÀ DANH MỤC THÀNH PHẦN
     S.goals.forEach((g) => {
-      let targetVal = +g.targetValue || 0;
+      let goalItemsVal = (g.items || []).reduce((sum, item) => sum + (+item.value || 0), 0);
+      let targetVal = goalItemsVal;
       let startDate = g.startDate || new Date().toISOString().slice(0, 10);
       let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
       
@@ -1023,9 +1025,8 @@ function goals(){
       let targetMs = new Date(targetDate + "T00:00:00").getTime();
       let diffMonths = Math.max(1, Math.round((targetMs - startMs) / (1000 * 60 * 60 * 24 * 30.44)));
 
-      let extraAmount = +g.extraAmount || 0; 
       let totalAccumulatedCashflow = netMonthlyCashflow * diffMonths;
-      let totalProjectedResources = totalAccumulatedCashflow + extraAmount + t.net;
+      let totalProjectedResources = totalAccumulatedCashflow + t.net;
 
       let gap = targetVal - totalProjectedResources;
       let requiredAdditionalMonthlyCashflow = diffMonths > 0 ? (gap > 0 ? gap / diffMonths : 0) : 0;
@@ -1043,19 +1044,31 @@ function goals(){
             </div>
           </div>
 
+          <div style="margin: 10px 0;">
+            <div style="font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 6px;">DANH MỤC TÀI SẢN / NỢ THÀNH PHẦN (${(g.items || []).length}):</div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              ${(!g.items || g.items.length === 0) ? `<div class="small muted">Chưa có mục tài sản/nợ nào được thêm vào mục tiêu này.</div>` : ''}
+              ${(g.items || []).map(item => `
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 12px;">
+                  <span>📌 ${item.name}</span>
+                  <b style="color: ${item.value >= 0 ? '#059669' : '#dc2626'}">${money(item.value)}</b>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
           <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin:10px 0; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
             <div>
-              <div style="font-size:11px;color:#64748b;font-weight:600">Giá trị mục tiêu</div>
+              <div style="font-size:11px;color:#64748b;font-weight:600">Tổng giá trị mục tiêu</div>
               <div style="font-size:15px;font-weight:900;color:#2563eb">${money(targetVal)}</div>
             </div>
             <div>
-              <div style="font-size:11px;color:#64748b;font-weight:600">Tiền thêm / Nợ phát sinh</div>
-              <div style="font-size:15px;font-weight:900;color:${extraAmount >= 0 ? '#059669' : '#dc2626'}">${money(extraAmount)}</div>
+              <div style="font-size:11px;color:#64748b;font-weight:600">Dòng tiền thuần /tháng</div>
+              <div style="font-size:15px;font-weight:900;color:${netMonthlyCashflow>=0?'#059669':'#dc2626'}">${money(netMonthlyCashflow)}</div>
             </div>
           </div>
 
           <div style="font-size:12px;color:#334155;line-height:1.6;margin-bottom:12px">
-            • Dòng tiền thuần hiện tại: <b style="color:${netMonthlyCashflow>=0?'#059669':'#dc2626'}">${money(netMonthlyCashflow)}/tháng</b><br>
             • Tích lũy dòng tiền trong ${diffMonths} tháng: <b>${money(totalAccumulatedCashflow)}</b><br>
             • Tổng tài sản ròng dự kiến đạt được: <b>${money(totalProjectedResources)}</b>
           </div>
@@ -1079,11 +1092,11 @@ function goalForm(id = null){
   let g = id ? S.goals.find(x => x.id === id) : {
     id: "g_" + Date.now(),
     name: "",
-    targetValue: 0,
     startDate: new Date().toISOString().slice(0, 10),
     targetDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 10),
-    extraAmount: 0
+    items: []
   };
+  if(!g.items) g.items = [];
 
   let h = `
     <div class="card">
@@ -1091,9 +1104,6 @@ function goalForm(id = null){
       
       <label>Tên mục tiêu</label>
       <input id="gname" value="${g.name}" placeholder="VD: Mua nhà, Mua xe, Tự do tài chính...">
-
-      <label>Giá trị mục tiêu cần đạt (VNĐ)</label>
-      <input id="gtarget" class="money-input" value="${formatNumberInput(g.targetValue)}">
 
       <div class="grid2">
         <div>
@@ -1106,9 +1116,23 @@ function goalForm(id = null){
         </div>
       </div>
 
-      <label>Số tiền khác có thể bỏ vào / Nợ phải trả thêm (VNĐ - Không giới hạn âm/dương)</label>
-      <input id="gextra" class="money-input" value="${formatNumberInput(g.extraAmount)}" placeholder="Nhập số dương nếu bỏ thêm tiền, số âm nếu phát sinh nợ">
-      <div class="small muted" style="margin-top:2px">Cho phép nhập tự do giá trị âm hoặc dương để tính toán chính xác nguồn vốn bổ sung hoặc đòn bẩy nợ vay mà không bị giới hạn.</div>
+      <div style="margin-top: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="margin:0">Danh mục tài sản / khoản nợ cấu thành mục tiêu</label>
+          <button class="small-btn secondary" type="button" onclick="addGoalItemRow()">+ Thêm dòng</button>
+        </div>
+        <div class="small muted" style="margin-bottom: 8px;">Nhập các tài sản cần mua hoặc các khoản vay/nguồn vốn phát sinh liên quan đến mục tiêu này.</div>
+        
+        <div id="goal-items-container" style="display: flex; flex-direction: column; gap: 8px;">
+          ${g.items.map((item, idx) => `
+            <div class="goal-item-row" style="display: flex; gap: 6px; align-items: center;">
+              <input type="text" class="g-item-name" placeholder="Tên tài sản/nợ..." value="${item.name || ''}" style="flex:2">
+              <input type="text" class="money-input g-item-val" placeholder="Giá trị (VNĐ)" value="${formatNumberInput(item.value || 0)}" style="flex:1.5">
+              <button type="button" class="danger small-btn" onclick="this.parentElement.remove()">X</button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
 
       <br><br>
       <button onclick="saveGoal('${g.id}')">Lưu mục tiêu</button>
@@ -1120,14 +1144,42 @@ function goalForm(id = null){
   document.querySelectorAll(".money-input").forEach(bindMoneyInput);
 }
 
+function addGoalItemRow() {
+  let container = document.getElementById("goal-items-container");
+  if(!container) return;
+  let div = document.createElement("div");
+  div.className = "goal-item-row";
+  div.style.cssText = "display: flex; gap: 6px; align-items: center;";
+  div.innerHTML = `
+    <input type="text" class="g-item-name" placeholder="Tên tài sản/nợ..." style="flex:2">
+    <input type="text" class="money-input g-item-val" placeholder="Giá trị (VNĐ)" style="flex:1.5">
+    <button type="button" class="danger small-btn" onclick="this.parentElement.remove()">X</button>
+  `;
+  container.appendChild(div);
+  div.querySelectorAll(".money-input").forEach(bindMoneyInput);
+}
+
 function saveGoal(id){
+  let nameEl = document.getElementById("gname");
+  let startEl = document.getElementById("gstart");
+  let endEl = document.getElementById("gend");
+
+  let itemRows = document.querySelectorAll(".goal-item-row");
+  let items = [];
+  itemRows.forEach(row => {
+    let itemName = row.querySelector(".g-item-name").value.trim();
+    let itemVal = parseNumberInput(row.querySelector(".g-item-val").value);
+    if(itemName || itemVal !== 0) {
+      items.push({ name: itemName || "Hạng mục", value: itemVal });
+    }
+  });
+
   let newGoal = {
     id: id,
-    name: document.getElementById("gname").value || "Mục tiêu tài chính",
-    targetValue: parseNumberInput(document.getElementById("gtarget").value),
-    startDate: document.getElementById("gstart").value,
-    targetDate: document.getElementById("gend").value,
-    extraAmount: parseNumberInput(document.getElementById("gextra").value)
+    name: nameEl.value || "Mục tiêu tài chính",
+    startDate: startEl.value,
+    targetDate: endEl.value,
+    items: items
   };
 
   if(!S.goals) S.goals = [];
