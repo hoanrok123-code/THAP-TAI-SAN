@@ -1,8 +1,8 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.9 PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v8.0 PRO)
    =================================================== */
 
-const KEY = "thap-tai-san-v7.9";
+const KEY = "thap-tai-san-v8.0";
 
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
@@ -902,6 +902,29 @@ function goals(){
   let t = totals();
   let netMonthlyCashflow = t.totalIncomeMonthly - t.totalExpenseMonthly - t.totalLoanInterest;
 
+  // Tính toán tổng hợp cho phần Tổng quan Mục tiêu
+  let totalGoalsCount = S.goals ? S.goals.length : 0;
+  let totalTargetSum = 0;
+  let totalAchievedSum = 0;
+
+  if (totalGoalsCount > 0) {
+    S.goals.forEach(g => {
+      let targetVal = +g.targetValue || 0;
+      let startDate = g.startDate || new Date().toISOString().slice(0, 10);
+      let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
+      let startMs = new Date(startDate + "T00:00:00").getTime();
+      let targetMs = new Date(targetDate + "T00:00:00").getTime();
+      let diffMonths = Math.max(1, Math.round((targetMs - startMs) / (1000 * 60 * 60 * 24 * 30.44)));
+      let extraAmount = +g.extraAmount || 0; 
+      let totalAccumulatedCashflow = netMonthlyCashflow * diffMonths;
+      let totalProjectedResources = totalAccumulatedCashflow + extraAmount + t.net;
+
+      totalTargetSum += targetVal;
+      totalAchievedSum += Math.min(targetVal, Math.max(0, totalProjectedResources));
+    });
+  }
+  let overallProgressPct = totalTargetSum > 0 ? (totalAchievedSum / totalTargetSum) * 100 : 0;
+
   let h = `
     <div class="card">
       <div class="sectionhead">
@@ -917,7 +940,77 @@ function goals(){
   if (!S.goals || S.goals.length === 0) {
     h += `<div class="card"><div class="small muted" style="text-align:center;padding:20px 0">Chưa có mục tiêu tài chính nào được thiết lập. Hãy bấm "+ Thêm mục tiêu" để bắt đầu.</div></div>`;
   } else {
-    S.goals.forEach((g, idx) => {
+    // 🌟 KHU VỰC TỔNG QUAN THEO DÕI NHANH CÁC MỤC TIÊU (ĐƯỢC TÚT TÁT GỌN GÀNG, HIỆN ĐẠI, KHOA HỌC)
+    h += `
+      <div class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #cbd5e1;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div>
+            <h3 style="font-size: 15px; font-weight: 800; color: #0f172a; margin: 0;">📊 Tổng Quan Theo Dõi Mục Tiêu</h3>
+            <p class="small muted" style="margin: 2px 0 0 0;">Tiến độ tổng thể dựa trên năng lực tài chính hệ thống</p>
+          </div>
+          <div style="text-align: right;">
+            <span style="font-size: 16px; font-weight: 900; color: #2563eb;">${pct(overallProgressPct)}</span>
+            <div style="font-size: 9px; color: #64748b; font-weight: 700;">ĐẠT ĐƯỢC</div>
+          </div>
+        </div>
+
+        <div style="background: #ffffff; border-radius: 8px; height: 8px; width: 100%; overflow: hidden; margin-bottom: 12px; border: 1px solid #e2e8f0;">
+          <div style="background: linear-gradient(90deg, #3b82f6, #10b981); height: 100%; width: ${Math.min(100, overallProgressPct)}%; border-radius: 8px;"></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+    `;
+
+    S.goals.forEach((g) => {
+      let targetVal = +g.targetValue || 0;
+      let startDate = g.startDate || new Date().toISOString().slice(0, 10);
+      let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
+      let startMs = new Date(startDate + "T00:00:00").getTime();
+      let targetMs = new Date(targetDate + "T00:00:00").getTime();
+      let diffMonths = Math.max(1, Math.round((targetMs - startMs) / (1000 * 60 * 60 * 24 * 30.44)));
+      let extraAmount = +g.extraAmount || 0; 
+      let totalAccumulatedCashflow = netMonthlyCashflow * diffMonths;
+      let totalProjectedResources = totalAccumulatedCashflow + extraAmount + t.net;
+
+      let achievedVal = Math.max(0, totalProjectedResources);
+      let gap = targetVal - achievedVal;
+      let itemPct = targetVal > 0 ? (achievedVal / targetVal) * 100 : 0;
+      let badgeColor = itemPct >= 100 ? '#059669' : '#d97706';
+      let badgeBg = itemPct >= 100 ? '#d1fae5' : '#fef3c7';
+
+      h += `
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <b style="font-size: 13px; color: #0f172a;">🎯 ${g.name}</b>
+            <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">
+              ${pct(itemPct)} hoàn thành
+            </span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; font-size: 11px; text-align: center; background: #f8fafc; padding: 6px; border-radius: 6px;">
+            <div>
+              <div style="color: #64748b; font-size: 9px; font-weight: 600;">MỤC TIÊU</div>
+              <div style="font-weight: 800; color: #0f172a;">${money(targetVal)}</div>
+            </div>
+            <div>
+              <div style="color: #64748b; font-size: 9px; font-weight: 600;">ĐÃ CÓ</div>
+              <div style="font-weight: 800; color: #059669;">${money(achievedVal)}</div>
+            </div>
+            <div>
+              <div style="color: #64748b; font-size: 9px; font-weight: 600;">CÒN THIẾU</div>
+              <div style="font-weight: 800; color: ${gap > 0 ? '#dc2626' : '#059669'};">${gap > 0 ? money(gap) : '0 đ (Đã đạt)'}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    h += `
+        </div>
+      </div>
+    `;
+
+    // CHI TIẾT TỪNG MỤC TIÊU
+    S.goals.forEach((g) => {
       let targetVal = +g.targetValue || 0;
       let startDate = g.startDate || new Date().toISOString().slice(0, 10);
       let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
