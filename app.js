@@ -1,8 +1,8 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.8 PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.9 PRO)
    =================================================== */
 
-const KEY = "thap-tai-san-v7.8";
+const KEY = "thap-tai-san-v7.9";
 
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
@@ -148,11 +148,11 @@ function getFilteredMilestones(periodKey, startYear) {
 }
 
 function nav(){
-  let ns = [["dashboard", "Tổng quan"], ["tower", "Tháp tài sản"], ["assets", "Tài sản"], ["cash", "Dòng tiền"], ["history", "Nhập thực tế"]];
+  let ns = [["dashboard", "Tổng quan"], ["tower", "Tháp tài sản"], ["assets", "Tài sản"], ["cash", "Dòng tiền"], ["goals", "Mục tiêu"], ["history", "Nhập thực tế"]];
   document.getElementById("nav").innerHTML = ns.map(([id, t]) => `<button class="${S.tab===id?"active":""}" onclick="S.tab='${id}';save();render()">${t}</button>`).join("");
 }
 
-function render(){ nav(); ({dashboard, tower, assets, cash, history}[S.tab] || dashboard)(); }
+function render(){ nav(); ({dashboard, tower, assets, cash, goals, history}[S.tab] || dashboard)(); }
 
 function dashboard(){
   const t = totals();
@@ -170,7 +170,6 @@ function dashboard(){
   const p4 = (l4 / totalVal) * 100;
   const p5 = (l5 / totalVal) * 100;
 
-  // Đánh giá tỷ lệ nợ/thu và (nợ+chi)/thu theo mẫu tối giản mới
   let ratio1 = t.debtToIncomeRatio;
   let eval1Text = ratio1 <= 30 ? "Tốt" : (ratio1 <= 40 ? "Cảnh báo" : "Không nên");
   let eval1Class = ratio1 <= 30 ? "badge-good" : (ratio1 <= 40 ? "badge-warn" : "badge-bad");
@@ -226,7 +225,6 @@ function dashboard(){
       </div>
     </div>
 
-    <!-- Khối Chỉ số An toàn & Dòng tiền tối giản giống yêu cầu -->
     <div class="card" style="background:#ffffff; color:#0f172a;">
       <h3 style="font-size: 15px; font-weight: 800; margin-bottom: 12px; color: #0f172a;">Chỉ số An toàn & Dòng tiền</h3>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -898,6 +896,156 @@ function saveLoan(i){
   else S.loans[i] = l;
 
   save(); S.tab = "cash"; render();
+}
+
+function goals(){
+  let t = totals();
+  let netMonthlyCashflow = t.totalIncomeMonthly - t.totalExpenseMonthly - t.totalLoanInterest;
+
+  let h = `
+    <div class="card">
+      <div class="sectionhead">
+        <div>
+          <h2>Mục Tiêu Tài Chính</h2>
+          <p class="small muted">Hoạch định giá trị, thời gian và tính toán dòng tiền/tài sản cần bổ sung.</p>
+        </div>
+        <button onclick="goalForm()">+ Thêm mục tiêu</button>
+      </div>
+    </div>
+  `;
+
+  if (!S.goals || S.goals.length === 0) {
+    h += `<div class="card"><div class="small muted" style="text-align:center;padding:20px 0">Chưa có mục tiêu tài chính nào được thiết lập. Hãy bấm "+ Thêm mục tiêu" để bắt đầu.</div></div>`;
+  } else {
+    S.goals.forEach((g, idx) => {
+      let targetVal = +g.targetValue || 0;
+      let startDate = g.startDate || new Date().toISOString().slice(0, 10);
+      let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
+      
+      let startMs = new Date(startDate + "T00:00:00").getTime();
+      let targetMs = new Date(targetDate + "T00:00:00").getTime();
+      let diffMonths = Math.max(1, Math.round((targetMs - startMs) / (1000 * 60 * 60 * 24 * 30.44)));
+
+      let extraAmount = +g.extraAmount || 0; 
+      let totalAccumulatedCashflow = netMonthlyCashflow * diffMonths;
+      let totalProjectedResources = totalAccumulatedCashflow + extraAmount + t.net;
+
+      let gap = targetVal - totalProjectedResources;
+      let requiredAdditionalMonthlyCashflow = diffMonths > 0 ? (gap > 0 ? gap / diffMonths : 0) : 0;
+
+      h += `
+        <div class="card" style="border-left: 4px solid #3b82f6;">
+          <div class="sectionhead">
+            <div>
+              <h3 style="font-size:16px;color:#0f172a;margin-bottom:2px">${g.name}</h3>
+              <div class="small muted">Thời gian: từ ${datef(startDate)} đến ${datef(targetDate)} (~${diffMonths} tháng)</div>
+            </div>
+            <div>
+              <button class="secondary small-btn" onclick="goalForm('${g.id}')">Sửa</button>
+              <button class="danger small-btn" onclick="delGoal('${g.id}')">Xóa</button>
+            </div>
+          </div>
+
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; margin:10px 0; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div>
+              <div style="font-size:11px;color:#64748b;font-weight:600">Giá trị mục tiêu</div>
+              <div style="font-size:15px;font-weight:900;color:#2563eb">${money(targetVal)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#64748b;font-weight:600">Tiền thêm / Nợ phát sinh</div>
+              <div style="font-size:15px;font-weight:900;color:${extraAmount >= 0 ? '#059669' : '#dc2626'}">${money(extraAmount)}</div>
+            </div>
+          </div>
+
+          <div style="font-size:12px;color:#334155;line-height:1.6;margin-bottom:12px">
+            • Dòng tiền thuần hiện tại: <b style="color:${netMonthlyCashflow>=0?'#059669':'#dc2626'}">${money(netMonthlyCashflow)}/tháng</b><br>
+            • Tích lũy dòng tiền trong ${diffMonths} tháng: <b>${money(totalAccumulatedCashflow)}</b><br>
+            • Tổng tài sản ròng dự kiến đạt được: <b>${money(totalProjectedResources)}</b>
+          </div>
+
+          <div style="background:${gap <= 0 ? '#d1fae5' : '#fef3c7'}; border:1px solid ${gap <= 0 ? '#10b981' : '#f59e0b'}; border-radius:8px; padding:10px; text-align:center;">
+            ${gap <= 0 ? 
+              `<div style="font-weight:700;color:#065f46;font-size:13px">🎉 Mục tiêu khả thi! Bạn đang vượt mức dự kiến ${money(Math.abs(gap))}.</div>` : 
+              `<div style="font-weight:700;color:#92400e;font-size:13px">⚠️ Còn thiếu ${money(gap)} so với mục tiêu</div>
+               <div style="font-size:11px;color:#78350f;margin-top:4px">Cần nâng thêm dòng tiền thuần mỗi tháng: <b style="color:#b45309">${money(requiredAdditionalMonthlyCashflow)}/tháng</b> hoặc bổ sung tài sản ngay.</div>`
+            }
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  document.getElementById("app").innerHTML = h;
+}
+
+function goalForm(id = null){
+  let g = id ? S.goals.find(x => x.id === id) : {
+    id: "g_" + Date.now(),
+    name: "",
+    targetValue: 0,
+    startDate: new Date().toISOString().slice(0, 10),
+    targetDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().slice(0, 10),
+    extraAmount: 0
+  };
+
+  let h = `
+    <div class="card">
+      <h2>${id ? "Sửa mục tiêu tài chính" : "Thêm mục tiêu tài chính mới"}</h2>
+      
+      <label>Tên mục tiêu</label>
+      <input id="gname" value="${g.name}" placeholder="VD: Mua nhà, Mua xe, Tự do tài chính...">
+
+      <label>Giá trị mục tiêu cần đạt (VNĐ)</label>
+      <input id="gtarget" class="money-input" value="${formatNumberInput(g.targetValue)}">
+
+      <div class="grid2">
+        <div>
+          <label>Ngày bắt đầu</label>
+          <input id="gstart" type="date" value="${g.startDate}">
+        </div>
+        <div>
+          <label>Ngày cần đạt được</label>
+          <input id="gend" type="date" value="${g.targetDate}">
+        </div>
+      </div>
+
+      <label>Số tiền khác có thể bỏ vào / Nợ phải trả thêm (VNĐ)</label>
+      <input id="gextra" class="money-input" value="${formatNumberInput(g.extraAmount)}" placeholder="Số dương là tiền bỏ thêm, số âm là nợ phát sinh">
+      <div class="small muted" style="margin-top:2px">Khoản tiền vốn ban đầu bổ sung thêm hoặc khoản nợ phát sinh tác động vào mốc mục tiêu.</div>
+
+      <br><br>
+      <button onclick="saveGoal('${g.id}')">Lưu mục tiêu</button>
+      <button class="secondary" onclick="render()">Hủy</button>
+    </div>
+  `;
+
+  document.getElementById("app").innerHTML = h;
+  document.querySelectorAll(".money-input").forEach(bindMoneyInput);
+}
+
+function saveGoal(id){
+  let newGoal = {
+    id: id,
+    name: document.getElementById("gname").value || "Mục tiêu tài chính",
+    targetValue: parseNumberInput(document.getElementById("gtarget").value),
+    startDate: document.getElementById("gstart").value,
+    targetDate: document.getElementById("gend").value,
+    extraAmount: parseNumberInput(document.getElementById("gextra").value)
+  };
+
+  if(!S.goals) S.goals = [];
+  let idx = S.goals.findIndex(x => x.id === id);
+  if (idx >= 0) S.goals[idx] = newGoal;
+  else S.goals.push(newGoal);
+
+  save(); S.tab = "goals"; render();
+}
+
+function delGoal(id){
+  if(confirm("Xóa mục tiêu tài chính này?")){
+    S.goals = S.goals.filter(x => x.id !== id);
+    save(); render();
+  }
 }
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
