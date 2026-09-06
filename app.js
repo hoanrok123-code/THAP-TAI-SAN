@@ -1,30 +1,85 @@
-// MỖI LẦN UP CODE MỚI: Chỉ cần đổi số này (v1 -> v2 -> v3...)
-const CACHE_NAME = 'thap-tai-san-v2';
+// Khởi tạo mảng tài sản từ LocalStorage
+let assets = JSON.parse(localStorage.getItem('assets')) || [];
 
-// 1. Cài đặt và bỏ qua thời gian chờ
-self.addEventListener('install', (event) => {
-  self.skipWaiting();
+const assetForm = document.getElementById('asset-form');
+const assetList = document.getElementById('asset-list');
+
+// Định dạng tiền tệ VNĐ
+function formatVND(amount) {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+}
+
+// Cập nhật số liệu tính toán lên Tháp
+function updatePyramidUI() {
+  let totals = { 2: 0, 3: 0, 4: 0, 5: 0 };
+  let grandTotal = 0;
+
+  assets.forEach(item => {
+    const amt = parseFloat(item.amount) || 0;
+    if (totals[item.level] !== undefined) {
+      totals[item.level] += amt;
+      grandTotal += amt;
+    }
+  });
+
+  const getPercent = (amt) => grandTotal > 0 ? ((amt / grandTotal) * 100).toFixed(1) + '%' : '0%';
+
+  document.getElementById('val-level-2').innerText = `${formatVND(totals[2])} (${getPercent(totals[2])})`;
+  document.getElementById('val-level-3').innerText = `${formatVND(totals[3])} (${getPercent(totals[3])})`;
+  document.getElementById('val-level-4').innerText = `${formatVND(totals[4])} (${getPercent(totals[4])})`;
+  document.getElementById('val-level-5').innerText = `${formatVND(totals[5])} (${getPercent(totals[5])})`;
+}
+
+// Render danh sách tài sản bên dưới
+function renderAssetList() {
+  assetList.innerHTML = '';
+  
+  if (assets.length === 0) {
+    assetList.innerHTML = '<p style="color:#64748b; text-align:center;">Chưa có tài sản nào được ghi nhận.</p>';
+    return;
+  }
+
+  assets.forEach((item, index) => {
+    const div = document.createElement('div');
+    div.className = 'asset-item';
+    div.innerHTML = `
+      <div>
+        <strong>${item.name}</strong> <br>
+        <small style="color:#64748b;">Tầng ${item.level} - ${formatVND(item.amount)}</small>
+      </div>
+      <button class="btn-delete" onclick="deleteAsset(${index})">Xóa</button>
+    `;
+    assetList.appendChild(div);
+  });
+}
+
+// Thêm tài sản mới
+assetForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = document.getElementById('asset-name').value;
+  const amount = parseFloat(document.getElementById('asset-amount').value);
+  const level = parseInt(document.getElementById('asset-level').value);
+
+  if (name && amount) {
+    assets.push({ name, amount, level });
+    localStorage.setItem('assets', JSON.stringify(assets));
+    
+    assetForm.reset();
+    init();
+  }
 });
 
-// 2. Kích hoạt và XÓA SẠCH cache cũ ngay lập tức
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('Xóa cache cũ:', cache);
-            return caches.delete(cache);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
+// Xóa tài sản
+function deleteAsset(index) {
+  assets.splice(index, 1);
+  localStorage.setItem('assets', JSON.stringify(assets));
+  init();
+}
 
-// 3. Ưu tiên tải từ Network trước, nếu mất mạng mới dùng Cache
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
-});
+// Chạy khởi tạo ban đầu
+function init() {
+  renderAssetList();
+  updatePyramidUI();
+}
+
+document.addEventListener('DOMContentLoaded', init);
