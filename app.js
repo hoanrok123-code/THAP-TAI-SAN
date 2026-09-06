@@ -1,5 +1,5 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v8.0 FULL PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v8.0 PRO)
    =================================================== */
 
 const KEY = "thap-tai-san-v8.0";
