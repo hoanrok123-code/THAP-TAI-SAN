@@ -1,21 +1,26 @@
+/* ===================================================
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP)
+   =================================================== */
+
 const KEY = "thap-tai-san-v5";
 
+// Config cấu trúc các tầng tháp tài sản (Sửa ID 1 -> 5 đồng bộ toàn hệ thống)
 const LAYERS_CONFIG = [
-  { id: 0, name: "1. Nền tảng: Năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
-  { id: 1, name: "2. Tài sản phải có", desc: "Quỹ dự phòng (12-18 tháng chi phí), tiền mặt", targetPct: 12.5, minPct: 10, maxPct: 15 },
-  { id: 2, name: "3. Tài sản thu nhập", desc: "BĐS cho thuê, cổ tức, trái phiếu, tiền gửi", targetPct: 27.5, minPct: 20, maxPct: 35 },
-  { id: 3, name: "4. Tài sản tăng trưởng", desc: "Cổ phiếu, ETF, BĐS tăng giá, quỹ", targetPct: 52.5, minPct: 45, maxPct: 60 },
-  { id: 4, name: "5. Tài sản đầu cơ", desc: "Crypto, BĐS lướt sóng, cơ hội rủi ro cao", targetPct: 7.5, minPct: 0, maxPct: 10 }
+  { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
+  { id: 2, name: "2. Tài sản phải có", desc: "Quỹ dự phòng (12-18 tháng chi phí), tiền mặt", targetPct: 12.5, minPct: 10, maxPct: 15 },
+  { id: 3, name: "3. Tài sản thu nhập", desc: "BĐS cho thuê, cổ tức, trái phiếu, tiền gửi", targetPct: 27.5, minPct: 20, maxPct: 35 },
+  { id: 4, name: "4. Tài sản tăng trưởng", desc: "Cổ phiếu, ETF, BĐS tăng giá, quỹ", targetPct: 52.5, minPct: 45, maxPct: 60 },
+  { id: 5, name: "5. Tài sản đầu cơ", desc: "Crypto, BĐS lướt sóng, cơ hội rủi ro cao", targetPct: 7.5, minPct: 0, maxPct: 10 }
 ];
 
 let S = JSON.parse(localStorage.getItem(KEY) || "null") || {
   assets: [
-    { id: "a1", name: "Quỹ dự phòng khẩn cấp", type: "cash", value: 300000000, rate: 0, cashflow: 0, debt: 0, layer: 1 },
-    { id: "a2", name: "Vàng SJC", type: "gold", chi: 20, goldPrice: 8500000, value: 170000000, rate: 0, cashflow: 0, debt: 0, layer: 1 },
-    { id: "a3", name: "Tiền gửi tiết kiệm", type: "deposit", value: 1000000000, rate: 6, cashflow: 0, debt: 0, layer: 2 },
-    { id: "a4", name: "Căn hộ cho thuê", type: "rental", value: 3000000000, rent: 15000000, cost: 1000000, vacancy: 0, debt: 800000000, loanRate: 8, principal: 10000000, layer: 2 },
-    { id: "a5", name: "Danh mục Cổ phiếu / ETF", type: "stock", value: 4500000000, rate: 10, cashflow: 0, debt: 0, layer: 3 },
-    { id: "a6", name: "Tài sản Crypto", type: "other", value: 400000000, rate: 0, cashflow: 0, debt: 0, layer: 4 }
+    { id: "a1", name: "Quỹ dự phòng khẩn cấp", type: "cash", value: 300000000, rate: 0, cashflow: 0, debt: 0, layer: 2 },
+    { id: "a2", name: "Vàng SJC", type: "gold", chi: 20, goldPrice: 8500000, value: 170000000, rate: 0, cashflow: 0, debt: 0, layer: 2 },
+    { id: "a3", name: "Tiền gửi tiết kiệm", type: "deposit", value: 1000000000, rate: 6, cashflow: 0, debt: 0, layer: 3 },
+    { id: "a4", name: "Căn hộ cho thuê", type: "rental", value: 3000000000, rent: 15000000, cost: 1000000, vacancy: 0, debt: 800000000, loanRate: 8, principal: 10000000, layer: 3 },
+    { id: "a5", name: "Danh mục Cổ phiếu / ETF", type: "stock", value: 4500000000, rate: 10, cashflow: 0, debt: 0, layer: 4 },
+    { id: "a6", name: "Tài sản Crypto", type: "other", value: 400000000, rate: 0, cashflow: 0, debt: 0, layer: 5 }
   ],
   income: 100000000, expense: 35000000, monthlyInvest: 50000000, bonus: 0, annualReturn: 10, emergencyMonths: 12,
   loans: [{ id: "l1", name: "Vay mua nhà", balance: 800000000, rate: 8, principal: 10000000 }],
@@ -146,7 +151,28 @@ function dashboard(){
 
   let totalVal = Math.max(1, t.assets);
 
+  const l1 = S.assets.filter(a => +a.layer === 1).reduce((s, a) => s + (+a.value || 0), 0);
+  const l2 = S.assets.filter(a => +a.layer === 2).reduce((s, a) => s + (+a.value || 0), 0);
+  const l3 = S.assets.filter(a => +a.layer === 3).reduce((s, a) => s + (+a.value || 0), 0);
+  const l4 = S.assets.filter(a => +a.layer === 4).reduce((s, a) => s + (+a.value || 0), 0);
+  const l5 = S.assets.filter(a => +a.layer === 5).reduce((s, a) => s + (+a.value || 0), 0);
+
+  const p1 = (l1 / totalVal) * 100;
+  const p2 = (l2 / totalVal) * 100;
+  const p3 = (l3 / totalVal) * 100;
+  const p4 = (l4 / totalVal) * 100;
+  const p5 = (l5 / totalVal) * 100;
+
   document.getElementById("app").innerHTML = `
+    <style>
+      .pyramid-container { width: 100%; max-width: 420px; margin: 16px auto 24px; }
+      .pyramid-svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 6px 12px rgba(15, 23, 42, 0.12)); }
+      .pyramid-layer { transition: transform 0.2s ease, opacity 0.2s ease; cursor: pointer; }
+      .pyramid-layer:hover { opacity: 0.95; transform: translateY(-2px); }
+      .pyramid-label { fill: #ffffff; font-size: 11px; font-weight: 800; text-anchor: middle; font-family: -apple-system, sans-serif; pointer-events: none; }
+      .pyramid-sub { fill: rgba(255, 255, 255, 0.9); font-size: 9.5px; font-weight: 600; text-anchor: middle; font-family: -apple-system, sans-serif; pointer-events: none; }
+    </style>
+
     <div class="card hero">
       <div class="small">TÀI SẢN RÒNG (NET WORTH)</div>
       <div style="font-size:28px;font-weight:900;margin:4px 0 10px">${money(t.net)}</div>
@@ -179,6 +205,49 @@ function dashboard(){
         <h3>Tỷ lệ Tháp Tài Sản</h3>
         <span class="small muted">Thực tế vs Chuẩn</span>
       </div>
+
+      <div class="pyramid-container">
+        <svg viewBox="0 0 400 250" class="pyramid-svg">
+          <defs>
+            <linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient>
+            <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+            <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
+            <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e3a8a"/></linearGradient>
+          </defs>
+
+          <g class="pyramid-layer">
+            <polygon points="200,10 162,54 238,54" fill="url(#g5)"/>
+            <text x="200" y="34" class="pyramid-label">5. Đầu cơ</text>
+            <text x="200" y="46" class="pyramid-sub">${pct(p5)}</text>
+          </g>
+
+          <g class="pyramid-layer">
+            <polygon points="159,58 241,58 277,102 123,102" fill="url(#g4)"/>
+            <text x="200" y="78" class="pyramid-label">4. Tăng trưởng</text>
+            <text x="200" y="92" class="pyramid-sub">${pct(p4)} (Chuẩn 45-60%)</text>
+          </g>
+
+          <g class="pyramid-layer">
+            <polygon points="120,106 280,106 316,150 84,150" fill="url(#g3)"/>
+            <text x="200" y="126" class="pyramid-label">3. Tài sản thu nhập</text>
+            <text x="200" y="140" class="pyramid-sub">${pct(p3)} (Chuẩn 20-35%)</text>
+          </g>
+
+          <g class="pyramid-layer">
+            <polygon points="81,154 319,154 355,198 45,198" fill="url(#g2)"/>
+            <text x="200" y="174" class="pyramid-label">2. Tài sản phải có</text>
+            <text x="200" y="188" class="pyramid-sub">${pct(p2)} (Chuẩn 10-15%)</text>
+          </g>
+
+          <g class="pyramid-layer">
+            <polygon points="42,202 358,202 394,246 6,246" fill="url(#g1)"/>
+            <text x="200" y="222" class="pyramid-label">1. Nền tảng năng lực cá nhân</text>
+            <text x="200" y="236" class="pyramid-sub">Sức khỏe • Kỹ năng • Mối quan hệ</text>
+          </g>
+        </svg>
+      </div>
+
       <div class="tower-analysis">
         ${LAYERS_CONFIG.slice(1).map(cfg => {
           let layerVal = S.assets.filter(a => +a.layer === cfg.id).reduce((s, a) => s + (+a.value || 0), 0);
@@ -320,7 +389,7 @@ function assets(){
   document.getElementById("app").innerHTML = h;
 }
 
-function assetForm(id = null, defaultLayer = 1){
+function assetForm(id = null, defaultLayer = 2){
   let a = id ? S.assets.find(x => x.id === id) : { id: "a_" + Date.now(), name: "", type: "cash", value: 0, chi: 0, goldPrice: 8500000, rate: 0, rent: 0, cost: 0, vacancy: 0, debt: 0, loanRate: 0, principal: 0, layer: defaultLayer };
   
   let h = `
