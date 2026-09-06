@@ -1,8 +1,8 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.6 PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.7 PRO)
    =================================================== */
 
-const KEY = "thap-tai-san-v7.6";
+const KEY = "thap-tai-san-v7.7";
 
 const LAYERS_CONFIG = [
   { id: 1, name: "1. Nền tảng năng lực cá nhân", desc: "Sức khỏe, kiến thức, kỹ năng, mối quan hệ", targetPct: 0, minPct: 0, maxPct: 0 },
@@ -216,19 +216,19 @@ function dashboard(){
       </div>
 
       <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; text-align:center; margin-bottom: 8px;">
-        <div><div style="font-size:9px;opacity:0.8">TỔNG THU</div><div style="font-size:11px;font-weight:700;color:#34d399">${money(t.totalIncomeMonthly)}</div></div>
-        <div><div style="font-size:9px;opacity:0.8">TỔNG CHI</div><div style="font-size:11px;font-weight:700;color:#f87171">${money(t.totalExpenseMonthly)}</div></div>
-        <div><div style="font-size:9px;opacity:0.8">LÃI VAY</div><div style="font-size:11px;font-weight:700;color:#fbbf24">${money(t.totalLoanInterest)}</div></div>
+        <div><div style="font-size:9px;opacity:0.8">TỔNG DÒNG TIỀN THU VỀ HÀNG THÁNG</div><div style="font-size:11px;font-weight:700;color:#34d399">${money(t.totalIncomeMonthly)}</div></div>
+        <div><div style="font-size:9px;opacity:0.8">TỔNG DÒNG TIỀN CHI HÀNG THÁNG</div><div style="font-size:11px;font-weight:700;color:#f87171">${money(t.totalExpenseMonthly)}</div></div>
+        <div><div style="font-size:9px;opacity:0.8">TỔNG DÒNG TIỀN NỢ TRẢ HÀNG THÁNG</div><div style="font-size:11px;font-weight:700;color:#fbbf24">${money(t.totalLoanInterest)}</div></div>
       </div>
 
-      <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 6px; font-size: 10px; opacity: 0.95; display: flex; flex-direction: column; gap: 3px;">
-        <div style="display:flex; justify-content:space-between;">
-          <span>• Nợ / Thu (${pct(ratio1)}):</span>
-          <b class="${eval1Class}">${eval1Text}</b>
+      <div style="border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; font-size: 12px; font-weight: 700; display: flex; flex-direction: column; gap: 6px; text-align: center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 4px;">
+          <span style="font-size:11px;">• Tỉ lệ trả nợ hàng tháng / Tổng dòng tiền thu về hàng tháng (${pct(ratio1)}):</span>
+          <b class="${eval1Class}" style="font-size:13px; text-transform:uppercase;">${eval1Text}</b>
         </div>
-        <div style="display:flex; justify-content:space-between;">
-          <span>• (Nợ + Chi) / Thu (${pct(ratio2)}):</span>
-          <b class="${eval2Class}">${eval2Text}</b>
+        <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.15); padding: 4px 8px; border-radius: 4px;">
+          <span style="font-size:11px;">• Tỉ lệ (trả nợ + chi tiêu) hàng tháng / Tổng dòng tiền thu về hàng tháng (${pct(ratio2)}):</span>
+          <b class="${eval2Class}" style="font-size:13px; text-transform:uppercase;">${eval2Text}</b>
         </div>
       </div>
     </div>
@@ -279,9 +279,9 @@ function dashboard(){
       </div>
       <div id="cashChartContainer"><canvas id="cashLineChart"></canvas></div>
       <div class="chart-legend" id="cashLegend">
-        <div class="legend-item"><div class="legend-color" style="background:#10b981"></div><span style="color:#065f46">🟢 Tổng thu</span></div>
-        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div><span style="color:#991b1b">🔴 Tổng chi</span></div>
-        <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span style="color:#92400e">🟡 Lãi vay</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#10b981"></div><span style="color:#065f46">🟢 Tổng dòng tiền thu về hàng tháng</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div><span style="color:#991b1b">🔴 Tổng dòng tiền chi hàng tháng</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span style="color:#92400e">🟡 Tổng dòng tiền nợ trả hàng tháng</span></div>
       </div>
     </div>
 
@@ -612,13 +612,13 @@ function historyForm(){
       <label>Tài sản ròng thực tế (VNĐ)</label>
       <input id="hnet" class="money-input" value="${formatNumberInput(t.net)}">
 
-      <label>Tổng thu nhập thực tế (VNĐ)</label>
+      <label>Tổng dòng tiền thu về hàng tháng (VNĐ)</label>
       <input id="hinc" class="money-input" value="${formatNumberInput(t.totalIncomeMonthly)}">
 
-      <label>Tổng chi phí thực tế (VNĐ)</label>
+      <label>Tổng dòng tiền chi hàng tháng (VNĐ)</label>
       <input id="hexp" class="money-input" value="${formatNumberInput(t.totalExpenseMonthly)}">
 
-      <label>Dòng tiền nợ lãi thực tế (VNĐ)</label>
+      <label>Tổng dòng tiền nợ trả hàng tháng (VNĐ)</label>
       <input id="hint" class="money-input" value="${formatNumberInput(t.totalLoanInterest)}">
 
       <br><br>
