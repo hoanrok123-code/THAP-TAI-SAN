@@ -1,5 +1,5 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.3 PREMIUM)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.4 PRO)
    =================================================== */
 
 const KEY = "thap-tai-san-v7";
@@ -25,6 +25,7 @@ let S = JSON.parse(localStorage.getItem(KEY) || "null") || {
   loans: [{ id: "l1", name: "Vay mua nhà", balance: 800000000, rate: 8, principal: 10000000 }],
   goals: [{ id: "g1", name: "Tự do tài chính 15 tỷ", target: 15000000000, deadline: "2033-09-01", assignedAssetIds: ["a3", "a5"], externalCapital: 1000000000 }],
   history: [
+    { date: "2024-12-31", netAssets: 7000000000, grossIncome: 100000000, totalExpense: 40000000, interestPaid: 6500000 },
     { date: "2025-03-31", netAssets: 7800000000, grossIncome: 110000000, totalExpense: 42000000, interestPaid: 6000000 },
     { date: "2025-06-30", netAssets: 8100000000, grossIncome: 115000000, totalExpense: 43000000, interestPaid: 5800000 },
     { date: "2025-09-30", netAssets: 8350000000, grossIncome: 112000000, totalExpense: 41000000, interestPaid: 5500000 },
@@ -32,7 +33,7 @@ let S = JSON.parse(localStorage.getItem(KEY) || "null") || {
     { date: "2026-03-31", netAssets: 8900000000, grossIncome: 118000000, totalExpense: 44000000, interestPaid: 5100000 },
     { date: "2026-06-30", netAssets: 9200000000, grossIncome: 125000000, totalExpense: 46000000, interestPaid: 4900000 }
   ],
-  tab: "dashboard", assetPeriod: "1Y", cashPeriod: "1Y", lastCalc: new Date().toISOString()
+  tab: "dashboard", assetPeriod: "1Y", assetStartYear: "2024", cashPeriod: "1Y", cashStartYear: "2024", lastCalc: new Date().toISOString()
 };
 
 function save(){ S.lastCalc = new Date().toISOString(); localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -117,44 +118,39 @@ function getExactRecordFor(dateStr) {
   return match;
 }
 
-function getReportingMilestones(periodKey) {
+function getFilteredMilestones(periodKey, startYear) {
   let now = new Date();
   let currentYear = now.getFullYear();
+  let sYear = parseInt(startYear) || (currentYear - 2);
   let milestones = [];
 
   if (periodKey === "3M") {
-    milestones = [
-      { label: `Q1/${currentYear-1}`, date: `${currentYear-1}-03-31` },
-      { label: `Q2/${currentYear-1}`, date: `${currentYear-1}-06-30` },
-      { label: `Q3/${currentYear-1}`, date: `${currentYear-1}-09-30` },
-      { label: `Q4/${currentYear-1}`, date: `${currentYear-1}-12-31` },
-      { label: `Q1/${currentYear}`, date: `${currentYear}-03-31` },
-      { label: `Q2/${currentYear}`, date: `${currentYear}-06-30` }
-    ];
-  } else if (periodKey === "6M") {
-    milestones = [
-      { label: `T6/${currentYear-2}`, date: `${currentYear-2}-06-30` },
-      { label: `T12/${currentYear-2}`, date: `${currentYear-2}-12-31` },
-      { label: `T6/${currentYear-1}`, date: `${currentYear-1}-06-30` },
-      { label: `T12/${currentYear-1}`, date: `${currentYear-1}-12-31` },
-      { label: `T6/${currentYear}`, date: `${currentYear}-06-30` },
-      { label: `Hiện tại`, date: now.toISOString().slice(0,10) }
-    ];
-  } else if (periodKey === "1Y") {
-    for (let i = 4; i >= 0; i--) {
-      let y = currentYear - i;
-      milestones.push({ label: `${y}`, date: `${y}-12-31` });
+    for (let y = sYear; y <= currentYear; y++) {
+      milestones.push(
+        { label: `Q1/${y}`, date: `${y}-03-31` },
+        { label: `Q2/${y}`, date: `${y}-06-30` },
+        { label: `Q3/${y}`, date: `${y}-09-30` },
+        { label: `Q4/${y}`, date: `${y}-12-31` }
+      );
     }
-    milestones.push({ label: "Hiện tại", date: now.toISOString().slice(0,10) });
-  } else if (periodKey === "3Y" || periodKey === "5Y" || periodKey === "10Y") {
-    let count = periodKey === "3Y" ? 3 : (periodKey === "5Y" ? 5 : 10);
-    for (let i = count; i >= 0; i--) {
-      let y = currentYear - i;
+  } else if (periodKey === "6M") {
+    for (let y = sYear; y <= currentYear; y++) {
+      milestones.push(
+        { label: `T6/${y}`, date: `${y}-06-30` },
+        { label: `T12/${y}`, date: `${y}-12-31` }
+      );
+    }
+  } else {
+    for (let y = sYear; y <= currentYear; y++) {
       milestones.push({ label: `${y}`, date: `${y}-12-31` });
     }
   }
-
-  return milestones;
+  milestones.push({ label: "Hiện tại", date: now.toISOString().slice(0,10) });
+  
+  // Lọc bỏ trùng lặp ngày
+  let uniqueMap = new Map();
+  milestones.forEach(m => uniqueMap.set(m.date, m));
+  return Array.from(uniqueMap.values()).sort((a,b) => new Date(a.date) - new Date(b.date));
 }
 
 function nav(){
@@ -181,25 +177,29 @@ function dashboard(){
   const p5 = (l5 / totalVal) * 100;
 
   let currentAssetPeriod = S.assetPeriod || "1Y";
+  let assetStartYear = S.assetStartYear || "2024";
   let currentCashPeriod = S.cashPeriod || "1Y";
+  let cashStartYear = S.cashStartYear || "2024";
+  let yearsList = ["2022", "2023", "2024", "2025", "2026"];
 
   document.getElementById("app").innerHTML = `
     <style>
-      .pyramid-container { width: 100%; max-width: 460px; margin: 15px auto; }
-      .pyramid-svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.12)); }
-      .pyramid-layer { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
-      .pyramid-layer:hover { opacity: 0.95; transform: scale(1.01); transform-origin: center; }
-      .pyramid-text-group { pointer-events: none; }
+      .pyramid-container { width: 100%; max-width: 440px; margin: 15px auto; }
+      .pyramid-svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.1)); }
+      .pyramid-layer { transition: all 0.2s ease; cursor: pointer; }
+      .pyramid-layer:hover { opacity: 0.93; transform: scale(1.008); transform-origin: center; }
       
-      .period-selector { display: flex; gap: 3px; background: #f1f5f9; padding: 3px; border-radius: 8px; flex-wrap: wrap; }
-      .period-btn { border: 0; background: transparent; color: #64748b; font-size: 10px; padding: 3px 6px; border-radius: 6px; font-weight: 700; cursor: pointer; }
-      .period-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-      
+      .chart-toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 6px; }
+      .period-selector { display: flex; gap: 2px; background: #f1f5f9; padding: 2px; border-radius: 6px; }
+      .period-btn { border: 0; background: transparent; color: #64748b; font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: 700; cursor: pointer; }
+      .period-btn.active { background: #ffffff; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+      .year-select { background: #f1f5f9; border: 1px solid #cbd5e1; font-size: 10px; font-weight: 700; color: #334155; padding: 2px 4px; border-radius: 6px; cursor: pointer; }
+
       .chart-legend { display: flex; gap: 12px; justify-content: center; margin-top: 10px; font-size: 11px; font-weight: 600; flex-wrap: wrap; }
       .legend-item { display: flex; align-items: center; gap: 5px; }
       .legend-color { width: 12px; height: 3px; border-radius: 2px; }
       .legend-bar-color { width: 10px; height: 10px; border-radius: 2px; }
-      canvas { width: 100% !important; height: 200px !important; display: block; }
+      canvas { width: 100% !important; height: 210px !important; display: block; }
       .no-data-msg { text-align: center; padding: 60px 0; color: #94a3b8; font-size: 13px; font-weight: 600; }
     </style>
 
@@ -213,50 +213,54 @@ function dashboard(){
     </div>
 
     <div class="card">
-      <div class="sectionhead">
+      <div class="sectionhead" style="align-items:flex-start">
         <div>
           <h3>Tài sản Ròng Thực tế</h3>
-          <div class="small muted">Biểu đồ Cột theo Mốc Báo cáo</div>
+          <div class="small muted">Biểu đồ Cột kết hợp Đường xu hướng</div>
         </div>
-        <div class="period-selector">
-          <button class="period-btn ${currentAssetPeriod==='3M'?'active':''}" onclick="setAssetPeriod('3M')">Quý</button>
-          <button class="period-btn ${currentAssetPeriod==='6M'?'active':''}" onclick="setAssetPeriod('6M')">6Th</button>
-          <button class="period-btn ${currentAssetPeriod==='1Y'?'active':''}" onclick="setAssetPeriod('1Y')">1Năm</button>
-          <button class="period-btn ${currentAssetPeriod==='3Y'?'active':''}" onclick="setAssetPeriod('3Y')">3Năm</button>
-          <button class="period-btn ${currentAssetPeriod==='5Y'?'active':''}" onclick="setAssetPeriod('5Y')">5Năm</button>
-          <button class="period-btn ${currentAssetPeriod==='10Y'?'active':''}" onclick="setAssetPeriod('10Y')">10Năm</button>
+        <div class="chart-toolbar">
+          <select class="year-select" onchange="setAssetStartYear(this.value)">
+            ${yearsList.map(y => `<option value="${y}" ${assetStartYear===y?'selected':''}>Từ ${y}</option>`).join('')}
+          </select>
+          <div class="period-selector">
+            <button class="period-btn ${currentAssetPeriod==='3M'?'active':''}" onclick="setAssetPeriod('3M')">Quý</button>
+            <button class="period-btn ${currentAssetPeriod==='6M'?'active':''}" onclick="setAssetPeriod('6M')">6Th</button>
+            <button class="period-btn ${currentAssetPeriod==='1Y'?'active':''}" onclick="setAssetPeriod('1Y')">1Năm</button>
+          </div>
         </div>
       </div>
       <div id="assetChartContainer">
         <canvas id="assetBarChart"></canvas>
       </div>
       <div class="chart-legend" id="assetLegend">
-        <div class="legend-item"><div class="legend-bar-color" style="background:#3b82f6"></div><span style="color:#1e40af">Tài sản ròng thực tế (Tỷ VNĐ)</span></div>
+        <div class="legend-item"><div class="legend-bar-color" style="background:#3b82f6"></div><span style="color:#1e40af">Tài sản ròng (Tỷ VNĐ) & Đường xu hướng</span></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="sectionhead">
+      <div class="sectionhead" style="align-items:flex-start">
         <div>
           <h3>Dòng tiền Thực tế</h3>
           <div class="small muted">Biểu đồ Dây 3 Thuộc tính</div>
         </div>
-        <div class="period-selector">
-          <button class="period-btn ${currentCashPeriod==='3M'?'active':''}" onclick="setCashPeriod('3M')">Quý</button>
-          <button class="period-btn ${currentCashPeriod==='6M'?'active':''}" onclick="setCashPeriod('6M')">6Th</button>
-          <button class="period-btn ${currentCashPeriod==='1Y'?'active':''}" onclick="setCashPeriod('1Y')">1Năm</button>
-          <button class="period-btn ${currentCashPeriod==='3Y'?'active':''}" onclick="setCashPeriod('3Y')">3Năm</button>
-          <button class="period-btn ${currentCashPeriod==='5Y'?'active':''}" onclick="setCashPeriod('5Y')">5Năm</button>
-          <button class="period-btn ${currentCashPeriod==='10Y'?'active':''}" onclick="setCashPeriod('10Y')">10Năm</button>
+        <div class="chart-toolbar">
+          <select class="year-select" onchange="setCashStartYear(this.value)">
+            ${yearsList.map(y => `<option value="${y}" ${cashStartYear===y?'selected':''}>Từ ${y}</option>`).join('')}
+          </select>
+          <div class="period-selector">
+            <button class="period-btn ${currentCashPeriod==='3M'?'active':''}" onclick="setCashPeriod('3M')">Quý</button>
+            <button class="period-btn ${currentCashPeriod==='6M'?'active':''}" onclick="setCashPeriod('6M')">6Th</button>
+            <button class="period-btn ${currentCashPeriod==='1Y'?'active':''}" onclick="setCashPeriod('1Y')">1Năm</button>
+          </div>
         </div>
       </div>
       <div id="cashChartContainer">
         <canvas id="cashLineChart"></canvas>
       </div>
       <div class="chart-legend" id="cashLegend">
-        <div class="legend-item"><div class="legend-color" style="background:#10b981"></div><span style="color:#065f46">🟢 Tổng thu chưa trừ</span></div>
-        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div><span style="color:#991b1b">🔴 Tổng chi bao gồm các loại</span></div>
-        <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span style="color:#92400e">🟡 Dòng tiền nợ lãi phải trả</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#10b981"></div><span style="color:#065f46">🟢 Tổng thu</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div><span style="color:#991b1b">🔴 Tổng chi</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span style="color:#92400e">🟡 Lãi vay</span></div>
       </div>
     </div>
 
@@ -267,7 +271,7 @@ function dashboard(){
       </div>
 
       <div class="pyramid-container">
-        <svg viewBox="0 0 400 300" class="pyramid-svg" preserveAspectRatio="xMidYMid meet">
+        <svg viewBox="0 0 400 305" class="pyramid-svg" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
             <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient>
@@ -276,49 +280,39 @@ function dashboard(){
             <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e3a8a"/></linearGradient>
           </defs>
 
-          <!-- Layer 5: Đầu cơ -->
+          <!-- Layer 5: Đầu cơ (Chóp cụt phẳng đỉnh để hiện rõ chữ) -->
           <g class="pyramid-layer">
-            <polygon points="200,8 140,70 260,70" fill="url(#g5)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <g class="pyramid-text-group">
-              <text x="200" y="38" fill="#ffffff" font-size="9.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">5. TÀI SẢN ĐẦU CƠ</text>
-              <text x="200" y="52" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p5)} (Tối đa 10%)</text>
-            </g>
+            <polygon points="170,10 230,10 255,62 145,62" fill="url(#g5)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <text x="200" y="32" fill="#ffffff" font-size="9.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">5. TÀI SẢN ĐẦU CƠ</text>
+            <text x="200" y="47" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p5)} (Tối đa 10%)</text>
           </g>
 
           <!-- Layer 4: Tăng trưởng -->
           <g class="pyramid-layer">
-            <polygon points="136,74 264,74 304,126 96,126" fill="url(#g4)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <g class="pyramid-text-group">
-              <text x="200" y="96" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">4. TÀI SẢN TĂNG TRƯỞNG</text>
-              <text x="200" y="112" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p4)} (Chuẩn 45-60%)</text>
-            </g>
+            <polygon points="142,66 258,66 298,122 102,122" fill="url(#g4)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <text x="200" y="90" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">4. TÀI SẢN TĂNG TRƯỞNG</text>
+            <text x="200" y="106" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p4)} (Chuẩn 45-60%)</text>
           </g>
 
           <!-- Layer 3: Thu nhập -->
           <g class="pyramid-layer">
-            <polygon points="92,130 308,130 348,182 52,182" fill="url(#g3)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <g class="pyramid-text-group">
-              <text x="200" y="152" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">3. TÀI SẢN THU NHẬP</text>
-              <text x="200" y="168" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p3)} (Chuẩn 20-35%)</text>
-            </g>
+            <polygon points="98,126 302,126 342,182 58,182" fill="url(#g3)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <text x="200" y="150" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">3. TÀI SẢN THU NHẬP</text>
+            <text x="200" y="166" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p3)} (Chuẩn 20-35%)</text>
           </g>
 
           <!-- Layer 2: Tài sản phải có -->
           <g class="pyramid-layer">
-            <polygon points="48,186 352,186 388,238 12,238" fill="url(#g2)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <g class="pyramid-text-group">
-              <text x="200" y="208" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">2. TÀI SẢN PHẢI CÓ</text>
-              <text x="200" y="224" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p2)} (Chuẩn 10-15%)</text>
-            </g>
+            <polygon points="54,186 346,186 386,242 14,242" fill="url(#g2)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <text x="200" y="210" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">2. TÀI SẢN PHẢI CÓ</text>
+            <text x="200" y="226" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p2)} (Chuẩn 10-15%)</text>
           </g>
 
           <!-- Layer 1: Năng lực cá nhân -->
           <g class="pyramid-layer">
-            <polygon points="8,242 392,242 400,292 0,292" fill="url(#g1)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-            <g class="pyramid-text-group">
-              <text x="200" y="262" fill="#ffffff" font-size="10.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">1. NỀN TẢNG NĂNG LỰC CÁ NHÂN</text>
-              <text x="200" y="278" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="600" text-anchor="middle" font-family="-apple-system, sans-serif">Sức khỏe • Kiến thức • Kỹ năng • Mối quan hệ</text>
-            </g>
+            <polygon points="10,246 390,246 400,296 0,296" fill="url(#g1)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <text x="200" y="267" fill="#ffffff" font-size="10.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">1. NỀN TẢNG NĂNG LỰC CÁ NHÂN</text>
+            <text x="200" y="283" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="600" text-anchor="middle" font-family="-apple-system, sans-serif">Sức khỏe • Kiến thức • Kỹ năng • Mối quan hệ</text>
           </g>
         </svg>
       </div>
@@ -350,18 +344,20 @@ function dashboard(){
     </div>
   `;
 
-  drawAssetBarChart("assetBarChart", currentAssetPeriod);
-  drawCashLineChart("cashLineChart", currentCashPeriod);
+  drawAssetBarChart("assetBarChart", currentAssetPeriod, assetStartYear);
+  drawCashLineChart("cashLineChart", currentCashPeriod, cashStartYear);
 }
 
 function setAssetPeriod(p) { S.assetPeriod = p; save(); render(); }
+function setAssetStartYear(y) { S.assetStartYear = y; save(); render(); }
 function setCashPeriod(p) { S.cashPeriod = p; save(); render(); }
+function setCashStartYear(y) { S.cashStartYear = y; save(); render(); }
 
-function drawAssetBarChart(id, periodKey = "1Y") {
+function drawAssetBarChart(id, periodKey = "1Y", startYear = "2024") {
   let canvas = document.getElementById(id);
   if (!canvas) return;
 
-  let milestones = getReportingMilestones(periodKey);
+  let milestones = getFilteredMilestones(periodKey, startYear);
   let pts = milestones.map(m => {
     let rec = getExactRecordFor(m.date);
     return { label: m.label, val: rec ? rec.netAssets / 1e9 : null, date: m.date };
@@ -381,28 +377,37 @@ function drawAssetBarChart(id, periodKey = "1Y") {
 
   let d = window.devicePixelRatio || 1;
   let w = canvas.clientWidth || 300;
-  let h = 200;
+  let h = 210;
   canvas.width = w * d;
   canvas.height = h * d;
   let ctx = canvas.getContext("2d");
   ctx.scale(d, d);
 
-  let pLeft = 35, pRight = 15, pTop = 25, pBottom = 25;
+  let pLeft = 40, pRight = 15, pTop = 25, pBottom = 25;
   let plotW = w - pLeft - pRight;
   let plotH = h - pTop - pBottom;
 
   let maxVal = Math.max(...validPts.map(p => p.val), 0.1);
   let minVal = Math.min(0, ...validPts.map(p => p.val));
 
-  ctx.strokeStyle = "#f1f5f9";
+  // Vẽ lưới trục dọc chuẩn
+  ctx.strokeStyle = "#e2e8f0";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     let y = pTop + (plotH / 4) * i;
+    let labelVal = maxVal - (maxVal / 4) * i;
+    ctx.fillStyle = "#64748b";
+    ctx.font = "8.5px -apple-system, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(labelVal.toFixed(1) + "t", pLeft - 4, y + 3);
+
     ctx.beginPath(); ctx.moveTo(pLeft, y); ctx.lineTo(w - pRight, y); ctx.stroke();
   }
 
   let steps = pts.length;
-  let barWidth = (plotW / steps) * 0.45;
+  let barWidth = (plotW / steps) * 0.4;
+  let coords = [];
+
   pts.forEach((p, i) => {
     let x = pLeft + (i + 0.5) * (plotW / steps);
 
@@ -416,24 +421,48 @@ function drawAssetBarChart(id, periodKey = "1Y") {
       ctx.fillStyle = "#3b82f6";
       ctx.fillRect(x - barWidth / 2, barY, barWidth, barH);
 
-      ctx.font = "9px -apple-system, sans-serif";
+      coords.push({ x, y: yVal });
+
+      ctx.font = "8.5px -apple-system, sans-serif";
       ctx.fillStyle = "#1e40af";
       ctx.textAlign = "center";
-      ctx.fillText(p.val.toFixed(2) + " tỷ", x, barY - 4);
+      ctx.fillText(p.val.toFixed(2), x, barY - 4);
     }
 
     ctx.fillStyle = "#64748b";
-    ctx.font = "9px -apple-system, sans-serif";
+    ctx.font = "8.5px -apple-system, sans-serif";
     ctx.textAlign = "center";
     ctx.fillText(p.label, x, h - 6);
   });
+
+  // Vẽ dây nối các đỉnh cột tăng trưởng
+  if (coords.length > 1) {
+    ctx.strokeStyle = "#2563eb";
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    coords.forEach((c, idx) => {
+      if (idx === 0) ctx.moveTo(c.x, c.y);
+      else ctx.lineTo(c.x, c.y);
+    });
+    ctx.stroke();
+
+    coords.forEach(c => {
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#2563eb";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+  }
 }
 
-function drawCashLineChart(id, periodKey = "1Y") {
+function drawCashLineChart(id, periodKey = "1Y", startYear = "2024") {
   let canvas = document.getElementById(id);
   if (!canvas) return;
 
-  let milestones = getReportingMilestones(periodKey);
+  let milestones = getFilteredMilestones(periodKey, startYear);
   let ptsData = milestones.map(m => {
     let rec = getExactRecordFor(m.date);
     return rec ? {
@@ -458,13 +487,13 @@ function drawCashLineChart(id, periodKey = "1Y") {
 
   let d = window.devicePixelRatio || 1;
   let w = canvas.clientWidth || 300;
-  let h = 200;
+  let h = 210;
   canvas.width = w * d;
   canvas.height = h * d;
   let ctx = canvas.getContext("2d");
   ctx.scale(d, d);
 
-  let pLeft = 35, pRight = 15, pTop = 20, pBottom = 25;
+  let pLeft = 40, pRight = 15, pTop = 20, pBottom = 25;
   let plotW = w - pLeft - pRight;
   let plotH = h - pTop - pBottom;
 
@@ -477,16 +506,22 @@ function drawCashLineChart(id, periodKey = "1Y") {
 
   const getY = (v) => pTop + plotH - (v / maxVal) * plotH;
 
-  ctx.strokeStyle = "#f1f5f9";
+  ctx.strokeStyle = "#e2e8f0";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     let y = pTop + (plotH / 4) * i;
+    let labelVal = maxVal - (maxVal / 4) * i;
+    ctx.fillStyle = "#64748b";
+    ctx.font = "8.5px -apple-system, sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText(labelVal.toFixed(0) + "M", pLeft - 4, y + 3);
+
     ctx.beginPath(); ctx.moveTo(pLeft, y); ctx.lineTo(w - pRight, y); ctx.stroke();
   }
 
   const drawLine = (key, color) => {
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2.2;
+    ctx.lineWidth = 2;
     
     let drawing = false;
     ctx.beginPath();
@@ -511,7 +546,7 @@ function drawCashLineChart(id, periodKey = "1Y") {
         let x = pLeft + (steps > 0 ? i * (plotW / steps) : plotW / 2);
         let y = getY(p[key]);
         ctx.fillStyle = color;
-        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
       }
     });
   };
@@ -520,12 +555,8 @@ function drawCashLineChart(id, periodKey = "1Y") {
   drawLine("exp", "#ef4444");
   drawLine("interest", "#f59e0b");
 
-  ctx.font = "9px -apple-system, sans-serif";
-  ctx.fillStyle = "#64748b";
-  ctx.textAlign = "left";
-  ctx.fillText(maxVal.toFixed(0) + "M", 2, pTop + 8);
-
   ctx.textAlign = "center";
+  ctx.fillStyle = "#64748b";
   milestones.forEach((m, i) => {
     let x = pLeft + (steps > 0 ? i * (plotW / steps) : plotW / 2);
     ctx.fillText(m.label, x, h - 6);
@@ -652,7 +683,7 @@ function tower(){
             <div class="item-compact">
               <div class="item-info">
                 <b>${a.name}</b>
-                <span class="small muted">${a.type === 'gold' ? `${a.chi||0} chỉ (Đơn giá: ${money(a.goldPrice)})` : money(a.value)} ${a.debt ? `• Nợ: ${money(a.debt)}` : ''}</span>
+                <span class="small muted">${a.type === 'gold' ? `${a.chi||0} chỉ × ${money(a.goldPrice)} = ` : ''}<b>${money(a.value)}</b> ${a.debt ? `• Nợ: ${money(a.debt)}` : ''}</span>
               </div>
               <div class="item-actions">
                 <button class="secondary small-btn" onclick="assetForm('${a.id}')">Sửa</button>
@@ -727,9 +758,10 @@ function assetForm(id = null, defaultLayer = 2){
 
       <div id="gold-group" style="display:${a.type==='gold'?'block':'none'}">
         <label>Số chỉ vàng</label>
-        <input id="xchi" class="money-input" value="${formatNumberInput(a.chi||0)}">
+        <input id="xchi" class="money-input" value="${formatNumberInput(a.chi||0)}" oninput="calcGoldTotal()">
         <label>Đơn giá 1 chỉ hiện tại (VNĐ)</label>
-        <input id="xgoldprice" class="money-input" value="${formatNumberInput(a.goldPrice||8500000)}">
+        <input id="xgoldprice" class="money-input" value="${formatNumberInput(a.goldPrice||8500000)}" oninput="calcGoldTotal()">
+        <label class="small text-good" style="margin-top:4px">Tổng tiền quy đổi: <b id="gold-total-preview">${money((a.chi||0)*(a.goldPrice||8500000))}</b></label>
       </div>
 
       <div id="value-group" style="display:${a.type==='gold'?'none':'block'}">
@@ -771,6 +803,14 @@ function toggleGoldInputs(type) {
   document.getElementById("gold-group").style.display = type === "gold" ? "block" : "none";
   document.getElementById("value-group").style.display = type === "gold" ? "none" : "block";
   document.getElementById("rental-group").style.display = type === "rental" ? "block" : "none";
+}
+
+function calcGoldTotal(){
+  let chi = parseNumberInput(document.getElementById("xchi")?.value);
+  let price = parseNumberInput(document.getElementById("xgoldprice")?.value);
+  let total = chi * price;
+  let preview = document.getElementById("gold-total-preview");
+  if(preview) preview.innerText = money(total);
 }
 
 function saveAsset(id) {
