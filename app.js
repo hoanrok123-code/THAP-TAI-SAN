@@ -1,5 +1,5 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v8.2 FULL PRO)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v8.1 FULL PRO)
    =================================================== */
 
 const KEY = "thap-tai-san-v8.1";
@@ -162,7 +162,6 @@ function render(){ nav(); ({dashboard, tower, assets, cash, goals, history}[S.ta
 function dashboard(){
   const t = totals();
   let totalVal = Math.max(1, t.assets);
-  let netMonthlyCashflow = t.totalIncomeMonthly - t.totalExpenseMonthly - t.totalLoanInterest;
 
   const l1 = S.assets.filter(a => +a.layer === 1).reduce((s, a) => s + (+a.value || 0), 0);
   const l2 = S.assets.filter(a => +a.layer === 2).reduce((s, a) => s + (+a.value || 0), 0);
@@ -189,60 +188,6 @@ function dashboard(){
   let currentCashPeriod = S.cashPeriod || "1Y";
   let cashStartYear = S.cashStartYear || "2024";
   let yearsList = ["2022", "2023", "2024", "2025", "2026"];
-
-  // Xây dựng phần hiển thị các mục tiêu (ảnh 1) ở trang Tổng quan
-  let goalsDashboardHtml = "";
-  if (S.goals && S.goals.length > 0) {
-    let goalCards = S.goals.map(g => {
-      let goalItemsVal = (g.items || []).reduce((sum, item) => sum + (+item.value || 0), 0);
-      let targetVal = goalItemsVal;
-      let startDate = g.startDate || new Date().toISOString().slice(0, 10);
-      let targetDate = g.targetDate || new Date().toISOString().slice(0, 10);
-      let startMs = new Date(startDate + "T00:00:00").getTime();
-      let targetMs = new Date(targetDate + "T00:00:00").getTime();
-      let diffMonths = Math.max(1, Math.round((targetMs - startMs) / (1000 * 60 * 60 * 24 * 30.44)));
-      let totalAccumulatedCashflow = netMonthlyCashflow * diffMonths;
-      let totalProjectedResources = totalAccumulatedCashflow + t.net;
-
-      let achievedVal = Math.max(0, totalProjectedResources);
-      let gap = targetVal - achievedVal;
-      let itemPct = targetVal > 0 ? (achievedVal / targetVal) * 100 : 0;
-      let badgeColor = itemPct >= 100 ? '#059669' : '#d97706';
-      let badgeBg = itemPct >= 100 ? '#d1fae5' : '#fef3c7';
-
-      return `
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <b style="font-size: 14px; color: #0f172a;">🎯 ${g.name}</b>
-            <span style="background: ${badgeBg}; color: ${badgeColor}; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;">
-              Tỉ lệ đã có / mục tiêu: ${pct(itemPct)}
-            </span>
-          </div>
-          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; font-size: 11px; text-align: center; background: #f8fafc; padding: 8px; border-radius: 8px; border: 1px solid #f1f5f9;">
-            <div>
-              <div style="color: #64748b; font-size: 9px; font-weight: 700;">TỔNG GIÁ TRỊ MỤC TIÊU</div>
-              <div style="font-weight: 800; color: #0f172a; margin-top: 2px;">${money(targetVal)}</div>
-            </div>
-            <div>
-              <div style="color: #64748b; font-size: 9px; font-weight: 700;">GIÁ TRỊ ĐÃ CÓ</div>
-              <div style="font-weight: 800; color: #059669; margin-top: 2px;">${money(achievedVal)}</div>
-            </div>
-            <div>
-              <div style="color: #64748b; font-size: 9px; font-weight: 700;">GIÁ TRỊ CÒN THIẾU</div>
-              <div style="font-weight: 800; color: ${gap > 0 ? '#dc2626' : '#059669'}; margin-top: 2px;">${gap > 0 ? money(gap) : '0 đ (Đã đạt)'}</div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    goalsDashboardHtml = `
-      <div class="card" style="background:#ffffff; color:#0f172a;">
-        <h3 style="font-size: 15px; font-weight: 800; margin-bottom: 12px; color: #0f172a;">Mục tiêu tài chính</h3>
-        ${goalCards}
-      </div>
-    `;
-  }
 
   document.getElementById("app").innerHTML = `
     <style>
@@ -302,8 +247,6 @@ function dashboard(){
         </div>
       </div>
     </div>
-
-    ${goalsDashboardHtml}
 
     <div class="card">
       <div class="sectionhead" style="align-items:flex-start">
