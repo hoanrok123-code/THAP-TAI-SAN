@@ -5,236 +5,196 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tháp Tài Sản</title>
 
-  <!-- PWA & Icon -->
+  <!-- Cấu hình Icon cho Điện thoại (iOS & Android) -->
   <link rel="icon" type="image/jpeg" href="thap-tai-san.jpg">
   <link rel="apple-touch-icon" href="thap-tai-san.jpg">
   <link rel="manifest" href="manifest.json">
 
   <style>
-    :root {
-      --bg-color: #f8fafc;
-      --card-bg: #ffffff;
-      --text-main: #0f172a;
-      --text-sub: #64748b;
-      --primary: #1e3a8a;
-      
-      /* Màu sắc 5 tầng tháp */
-      --lvl-5: #10b981; /* Đầu cơ - Xanh lá */
-      --lvl-4: #84cc16; /* Tăng trưởng - Cốm */
-      --lvl-3: #f59e0b; /* Thu nhập - Cam vàng */
-      --lvl-2: #3b82f6; /* Phải có - Xóa lam */
-      --lvl-1: #1e3a8a; /* Nền tảng - Xanh đậm */
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 16px;
-      display: flex;
-      justify-content: center;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 15px;
+      color: #0f172a;
     }
-    .app-container { width: 100%; max-width: 480px; }
+    .container { max-width: 600px; margin: 0 auto; }
 
-    /* Header */
-    .app-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .app-title { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
-    .btn-icon {
-      background: #e2e8f0;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #334155;
-      cursor: pointer;
-    }
-
-    /* Giao diện Tháp Tài Sản tối giản */
+    /* Card Tháp Tài Sản */
     .pyramid-card {
-      background: var(--card-bg);
-      border-radius: 16px;
+      background: #ffffff;
       padding: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      border-radius: 12px;
       margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
-    .pyramid-wrapper {
+    .pyramid-header {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .pyramid-row {
-      display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 12px 14px;
-      border-radius: 10px;
-      color: #ffffff;
-      font-size: 0.88rem;
-      font-weight: 600;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-      transition: transform 0.1s ease;
+      align-items: center;
+      margin-bottom: 14px;
     }
-    .pyramid-row:active { transform: scale(0.98); }
+    .pyramid-header h3 { margin: 0; color: #1e3a8a; font-size: 1.1rem; }
+    .btn-view-img {
+      padding: 6px 12px;
+      border: none;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
 
-    /* Điều chỉnh độ rộng tạo hình dáng tháp nhẹ nhàng */
-    .row-5 { background: var(--lvl-5); margin: 0 10%; }
-    .row-4 { background: var(--lvl-4); margin: 0 7.5%; }
-    .row-3 { background: var(--lvl-3); margin: 0 5%; }
-    .row-2 { background: var(--lvl-2); margin: 0 2.5%; }
-    .row-1 { background: var(--lvl-1); margin: 0 0; }
+    /* Đỉnh -> Đáy Tháp */
+    .pyramid-container { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .pyramid-level {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      color: #ffffff;
+      font-weight: 600;
+      border-radius: 6px;
+    }
+    .level-5 { width: 50%; background-color: #22c55e; } 
+    .level-4 { width: 65%; background-color: #84cc16; } 
+    .level-3 { width: 78%; background-color: #eab308; } 
+    .level-2 { width: 90%; background-color: #3b82f6; } 
+    .level-1 { width: 100%; background-color: #1e3a8a; } 
 
-    .row-label { display: flex; align-items: center; gap: 6px; }
-    .row-val { font-weight: 700; text-align: right; }
+    .pyramid-title { font-size: 0.8rem; }
+    .pyramid-value { font-size: 0.8rem; text-align: right; }
 
-    /* Form Nhập liệu dạng Card UI */
-    .card-box {
-      background: var(--card-bg);
-      border-radius: 16px;
+    /* Form Nhập Tài Sản */
+    .form-card {
+      background: #ffffff;
       padding: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
       margin-bottom: 20px;
     }
-    .card-title { font-size: 1rem; font-weight: 700; margin-bottom: 12px; color: var(--primary); }
-
-    .form-field { margin-bottom: 12px; }
-    .form-field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-sub); margin-bottom: 4px; }
-    .form-input {
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem; }
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+    .btn-submit {
       width: 100%;
       padding: 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      outline: none;
-      background: #f8fafc;
-    }
-    .form-input:focus { border-color: var(--primary); background: #ffffff; }
-
-    .btn-main {
-      width: 100%;
-      padding: 14px;
-      background: var(--primary);
-      color: #ffffff;
+      background: #1e3a8a;
+      color: white;
       border: none;
-      border-radius: 10px;
+      border-radius: 6px;
+      font-weight: bold;
       font-size: 1rem;
-      font-weight: 700;
       cursor: pointer;
     }
 
-    /* Danh sách Tài sản */
-    .asset-card {
+    /* List Tài Sản */
+    .asset-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: var(--card-bg);
-      padding: 12px 16px;
-      border-radius: 12px;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
       margin-bottom: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
-    .asset-info { font-size: 0.9rem; font-weight: 600; }
-    .asset-sub { font-size: 0.78rem; color: var(--text-sub); font-weight: 400; margin-top: 2px; }
-    .btn-del { color: #ef4444; border: none; background: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+    .btn-delete { color: #ef4444; border: none; background: none; cursor: pointer; font-weight: bold; }
 
-    /* Modal xem ảnh */
-    .modal {
+    /* Modal Ảnh Gốc */
+    .modal-overlay {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
-      z-index: 99;
-      justify-content: center;
-      align-items: center;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 9999;
+      text-align: center;
       padding: 20px;
     }
-    .modal img { max-width: 100%; max-height: 80vh; border-radius: 12px; }
+    .modal-overlay img { max-width: 100%; max-height: 80vh; margin-top: 10%; border-radius: 8px; }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
-    
-    <!-- HEADER -->
-    <div class="app-header">
-      <div class="app-title">🏰 Tháp Tài Sản</div>
-      <button class="btn-icon" onclick="document.getElementById('imgModal').style.display='flex'">📷 Ảnh mẫu</button>
-    </div>
-
-    <!-- KHỐI 1: TỔNG QUAN THÁP TÀI SẢN -->
+  <div class="container">
+    <!-- KHỐI 1: THÁP TÀI SẢN -->
     <div class="pyramid-card">
-      <div style="font-size:0.85rem; font-weight:600; color:var(--text-sub);">Cơ cấu tài sản hiện tại</div>
-      
-      <div class="pyramid-wrapper">
-        <div class="pyramid-row row-5">
-          <span class="row-label">5. Đầu cơ</span>
-          <span class="row-val" id="val-level-5">0 đ (0%)</span>
+      <div class="pyramid-header">
+        <h3>📊 Mô Hình Tháp Tài Sản</h3>
+        <button class="btn-view-img" onclick="document.getElementById('modal-img').style.display='block'">📷 Xem hình gốc</button>
+      </div>
+
+      <div class="pyramid-container">
+        <div class="pyramid-level level-5">
+          <span class="pyramid-title">5. Đầu cơ (≤10%)</span>
+          <span class="pyramid-value" id="val-level-5">0 đ (0%)</span>
         </div>
-        <div class="pyramid-row row-4">
-          <span class="row-label">4. Tăng trưởng</span>
-          <span class="row-val" id="val-level-4">0 đ (0%)</span>
+        <div class="pyramid-level level-4">
+          <span class="pyramid-title">4. Tăng trưởng (45-60%)</span>
+          <span class="pyramid-value" id="val-level-4">0 đ (0%)</span>
         </div>
-        <div class="pyramid-row row-3">
-          <span class="row-label">3. Thu nhập</span>
-          <span class="row-val" id="val-level-3">0 đ (0%)</span>
+        <div class="pyramid-level level-3">
+          <span class="pyramid-title">3. Thu nhập (20-35%)</span>
+          <span class="pyramid-value" id="val-level-3">0 đ (0%)</span>
         </div>
-        <div class="pyramid-row row-2">
-          <span class="row-label">2. Bảo vệ / Phải có</span>
-          <span class="row-val" id="val-level-2">0 đ (0%)</span>
+        <div class="pyramid-level level-2">
+          <span class="pyramid-title">2. Tài sản phải có (10-15%)</span>
+          <span class="pyramid-value" id="val-level-2">0 đ (0%)</span>
         </div>
-        <div class="pyramid-row row-1">
-          <span class="row-label">1. Nền tảng</span>
-          <span class="row-val">Vô giá</span>
+        <div class="pyramid-level level-1">
+          <span class="pyramid-title">1. Nền tảng / Trí tuệ</span>
+          <span class="pyramid-value">Vô giá</span>
         </div>
       </div>
     </div>
 
-    <!-- KHỐI 2: FORM NHẬP -->
-    <div class="card-box">
-      <div class="card-title">➕ Thêm tài sản mới</div>
+    <!-- KHỐI 2: FORM NHẬP TÀI SẢN -->
+    <div class="form-card">
+      <h3 style="margin-top:0; color:#1e3a8a;">➕ Thêm Tài Sản</h3>
       <form id="asset-form">
-        <div class="form-field">
-          <label>Tên tài sản</label>
-          <input type="text" id="asset-name" class="form-input" placeholder="Ví dụ: Tiết kiệm, Cổ phiếu..." required>
+        <div class="form-group">
+          <label>Tên tài sản / Khoản đầu tư</label>
+          <input type="text" id="asset-name" class="form-control" placeholder="Ví dụ: Cổ phiếu, Tiền gửi, BĐS..." required>
         </div>
-        <div class="form-field">
-          <label>Số tiền (VNĐ)</label>
-          <input type="number" id="asset-amount" class="form-input" placeholder="0" required>
+        <div class="form-group">
+          <label>Giá trị (VNĐ)</label>
+          <input type="number" id="asset-amount" class="form-control" placeholder="Ví dụ: 50000000" required>
         </div>
-        <div class="form-field">
-          <label>Vị trí trong tháp</label>
-          <select id="asset-level" class="form-input">
-            <option value="2">Tầng 2: Tài sản bảo vệ / Tiền mặt</option>
-            <option value="3">Tầng 3: Tài sản dòng tiền / Thu nhập</option>
-            <option value="4">Tầng 4: Tài sản tăng trưởng</option>
-            <option value="5">Tầng 5: Tài sản đầu cơ / Rủi ro</option>
+        <div class="form-group">
+          <label>Cấp độ Tháp Tài Sản</label>
+          <select id="asset-level" class="form-control">
+            <option value="2">Tầng 2: Tài sản phải có (Tiền tiết kiệm, Quỹ an toàn)</option>
+            <option value="3">Tầng 3: Tài sản thu nhập (Cho thuê, Cổ tức, Trái phiếu)</option>
+            <option value="4">Tầng 4: Tài sản tăng trưởng (Cổ phiếu, BĐS tăng giá)</option>
+            <option value="5">Tầng 5: Tài sản đầu cơ (Crypto, BĐS lướt sóng)</option>
           </select>
         </div>
-        <button type="submit" class="btn-main">Lưu dữ liệu</button>
+        <button type="submit" class="btn-submit">Lưu Tài Sản</button>
       </form>
     </div>
 
     <!-- KHỐI 3: DANH SÁCH TÀI SẢN -->
-    <div style="font-size:0.95rem; font-weight:700; margin-bottom:10px;">Danh mục đã lưu</div>
+    <h3 style="color:#1e3a8a;">📋 Danh Sách Tài Sản Đã Nhập</h3>
     <div id="asset-list"></div>
-
   </div>
 
-  <!-- Modal xem ảnh gốc -->
-  <div id="imgModal" class="modal" onclick="this.style.display='none'">
-    <img src="thap-tai-san.jpg" alt="Mô hình tháp tài sản">
+  <!-- Modal phóng to ảnh -->
+  <div id="modal-img" class="modal-overlay" onclick="this.style.display='none'">
+    <img src="thap-tai-san.jpg" alt="Tháp tài sản">
+    <p style="color:white; margin-top:10px;">Bấm bất kỳ đâu để đóng</p>
   </div>
 
   <script src="app.js"></script>
 
-  <!-- Auto Reload khi có phiên bản mới -->
+  <!-- Auto reload khi nâng cấp phiên bản -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then((reg) => {
