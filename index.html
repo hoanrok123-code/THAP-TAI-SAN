@@ -4,55 +4,120 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tháp Tài Sản</title>
-  
-  <!-- Icon khi đưa ra màn hình điện thoại (iOS & Android) -->
+
+  <!-- Cấu hình Icon và PWA cho màn hình điện thoại (iOS & Android) -->
   <link rel="icon" type="image/jpeg" href="thap-tai-san.jpg">
   <link rel="apple-touch-icon" href="thap-tai-san.jpg">
   <link rel="manifest" href="manifest.json">
-  
+
   <style>
-    /* Style cho biểu đồ Tháp Tài Sản */
+    /* Kiểu dáng tổng thể card Tháp Tài Sản */
+    .pyramid-card {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .pyramid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .pyramid-header h3 {
+      margin: 0;
+      color: #1e3a8a;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .btn-view-img {
+      padding: 6px 12px;
+      border: none;
+      background: #f1f5f9;
+      color: #334155;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.2s;
+    }
+    .btn-view-img:hover {
+      background: #e2e8f0;
+    }
+
+    /* Khung biểu đồ dạng Tháp */
     .pyramid-container {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      margin: 20px 0;
+      margin: 10px 0;
     }
     .pyramid-level {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 15px;
-      color: white;
-      font-weight: bold;
+      padding: 10px 14px;
+      color: #ffffff;
+      font-weight: 600;
       border-radius: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+      box-sizing: border-box;
       transition: transform 0.2s;
     }
-    .pyramid-level:hover { transform: scale(1.02); }
-    
-    /* Độ rộng giảm dần từ đáy lên đỉnh */
-    .level-5 { width: 40%; background-color: #22c55e; } /* Đầu cơ */
-    .level-4 { width: 55%; background-color: #84cc16; } /* Tăng trưởng */
-    .level-3 { width: 70%; background-color: #eab308; } /* Thu nhập */
-    .level-2 { width: 85%; background-color: #3b82f6; } /* Bảo vệ/Phải có */
-    .level-1 { width: 100%; background-color: #1e3a8a; } /* Nền tảng */
+    .pyramid-level:hover {
+      transform: scale(1.01);
+    }
 
-    .pyramid-title { font-size: 0.9em; }
-    .pyramid-value { font-size: 0.9em; text-align: right; }
+    /* Tỷ lệ độ rộng 5 tầng từ đỉnh xuống đáy */
+    .level-5 { width: 45%; background-color: #22c55e; } /* Tầng 5: Đầu cơ */
+    .level-4 { width: 60%; background-color: #84cc16; } /* Tầng 4: Tăng trưởng */
+    .level-3 { width: 75%; background-color: #eab308; } /* Tầng 3: Thu nhập */
+    .level-2 { width: 88%; background-color: #3b82f6; } /* Tầng 2: Tài sản phải có */
+    .level-1 { width: 100%; background-color: #1e3a8a; } /* Tầng 1: Nền tảng */
+
+    .pyramid-title { font-size: 0.85rem; }
+    .pyramid-value { font-size: 0.85rem; text-align: right; }
+
+    /* Modal xem ảnh phóng to */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 9999;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .modal-overlay img {
+      max-width: 100%;
+      max-height: 85vh;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    .modal-overlay p {
+      color: #ffffff;
+      margin-top: 10px;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
 
-  <!-- ĐẶT ĐOẠN NÀY VÀO TRONG MỤC GIAO DIỆN CHÍNH (DASHBOARD) -->
-  <div class="card" style="background:#fff; padding:15px; border-radius:10px; margin-bottom:20px; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <h3 style="margin:0; color:#1e3a8a;">📊 Mô Hình Tháp Tài Sản</h3>
-      <button onclick="document.getElementById('modal-img').style.display='block'" style="padding:5px 10px; border:none; background:#e2e8f0; border-radius:5px; cursor:pointer;">📷 Xem hình gốc</button>
+  <!-- ================= MỤC GIAO DIỆN THÁP TÀI SẢN ================= -->
+  <div class="pyramid-card">
+    <div class="pyramid-header">
+      <h3>📊 Mô Hình Tháp Tài Sản</h3>
+      <button class="btn-view-img" onclick="document.getElementById('modal-img').style.display='block'">📷 Xem hình gốc</button>
     </div>
 
-    <!-- Biểu đồ tháp tự động lấy số liệu -->
+    <!-- Biểu đồ Tháp hiển thị số liệu thực tế -->
     <div class="pyramid-container">
       <div class="pyramid-level level-5">
         <span class="pyramid-title">5. Đầu cơ (≤10%)</span>
@@ -77,11 +142,30 @@
     </div>
   </div>
 
-  <!-- Popup xem ảnh gốc -->
-  <div id="modal-img" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; text-align:center;" onclick="this.style.display='none'">
-    <img src="thap-tai-san.jpg" style="max-width:90%; max-height:90%; margin-top:5%; border-radius:8px;">
-    <p style="color:white; margin-top:10px;">Chạm vào bất kỳ đâu để đóng</p>
+  <!-- Modal phóng to ảnh tháp gốc khi bấm nút -->
+  <div id="modal-img" class="modal-overlay" onclick="this.style.display='none'">
+    <img src="thap-tai-san.jpg" alt="Mô hình tháp tài sản chuẩn">
+    <p>Chạm vào màn hình để đóng lại</p>
   </div>
 
+  <!-- Nối file xử lý logic Javascript -->
+  <script src="app.js"></script>
+
+  <!-- Script tự động cập nhật phiên bản mới & xóa triệt để cache cũ -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then((reg) => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Tự động tải lại trang khi phát hiện code trên GitHub đổi phiên bản mới
+              window.location.reload();
+            }
+          });
+        });
+      });
+    }
+  </script>
 </body>
 </html>
