@@ -1,5 +1,5 @@
 /* ===================================================
-   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.1 FINAL)
+   ỨNG DỤNG QUẢN LÝ THÁP TÀI SẢN (FINANCIAL TOWER APP - v7.3 PREMIUM)
    =================================================== */
 
 const KEY = "thap-tai-san-v7";
@@ -104,7 +104,7 @@ function totals(){
   };
 }
 
-function getLatestRecordBefore(dateStr) {
+function getExactRecordFor(dateStr) {
   let targetTime = new Date(dateStr + "T00:00:00").getTime();
   let sorted = [...S.history].sort((a,b) => new Date(a.date + "T00:00:00").getTime() - new Date(b.date + "T00:00:00").getTime());
   
@@ -113,17 +113,6 @@ function getLatestRecordBefore(dateStr) {
     if (new Date(item.date + "T00:00:00").getTime() <= targetTime) {
       match = item;
     } else break;
-  }
-  
-  if (!match) {
-    let t = totals();
-    return {
-      date: dateStr,
-      netAssets: t.net,
-      grossIncome: t.totalIncomeMonthly,
-      totalExpense: t.totalExpenseMonthly,
-      interestPaid: t.totalLoanInterest
-    };
   }
   return match;
 }
@@ -196,12 +185,11 @@ function dashboard(){
 
   document.getElementById("app").innerHTML = `
     <style>
-      .pyramid-container { width: 100%; max-width: 440px; margin: 10px auto 20px; }
-      .pyramid-svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.08)); }
-      .pyramid-layer { transition: transform 0.2s ease, opacity 0.2s ease; cursor: pointer; }
-      .pyramid-layer:hover { opacity: 0.92; transform: translateY(-1px); }
-      .pyramid-label { fill: #ffffff; font-size: 11px; font-weight: 800; text-anchor: middle; font-family: -apple-system, sans-serif; pointer-events: none; }
-      .pyramid-sub { fill: rgba(255, 255, 255, 0.95); font-size: 9.5px; font-weight: 600; text-anchor: middle; font-family: -apple-system, sans-serif; pointer-events: none; }
+      .pyramid-container { width: 100%; max-width: 460px; margin: 15px auto; }
+      .pyramid-svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.12)); }
+      .pyramid-layer { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; }
+      .pyramid-layer:hover { opacity: 0.95; transform: scale(1.01); transform-origin: center; }
+      .pyramid-text-group { pointer-events: none; }
       
       .period-selector { display: flex; gap: 3px; background: #f1f5f9; padding: 3px; border-radius: 8px; flex-wrap: wrap; }
       .period-btn { border: 0; background: transparent; color: #64748b; font-size: 10px; padding: 3px 6px; border-radius: 6px; font-weight: 700; cursor: pointer; }
@@ -212,6 +200,7 @@ function dashboard(){
       .legend-color { width: 12px; height: 3px; border-radius: 2px; }
       .legend-bar-color { width: 10px; height: 10px; border-radius: 2px; }
       canvas { width: 100% !important; height: 200px !important; display: block; }
+      .no-data-msg { text-align: center; padding: 60px 0; color: #94a3b8; font-size: 13px; font-weight: 600; }
     </style>
 
     <div class="card hero">
@@ -238,8 +227,10 @@ function dashboard(){
           <button class="period-btn ${currentAssetPeriod==='10Y'?'active':''}" onclick="setAssetPeriod('10Y')">10Năm</button>
         </div>
       </div>
-      <canvas id="assetBarChart"></canvas>
-      <div class="chart-legend">
+      <div id="assetChartContainer">
+        <canvas id="assetBarChart"></canvas>
+      </div>
+      <div class="chart-legend" id="assetLegend">
         <div class="legend-item"><div class="legend-bar-color" style="background:#3b82f6"></div><span style="color:#1e40af">Tài sản ròng thực tế (Tỷ VNĐ)</span></div>
       </div>
     </div>
@@ -259,8 +250,10 @@ function dashboard(){
           <button class="period-btn ${currentCashPeriod==='10Y'?'active':''}" onclick="setCashPeriod('10Y')">10Năm</button>
         </div>
       </div>
-      <canvas id="cashLineChart"></canvas>
-      <div class="chart-legend">
+      <div id="cashChartContainer">
+        <canvas id="cashLineChart"></canvas>
+      </div>
+      <div class="chart-legend" id="cashLegend">
         <div class="legend-item"><div class="legend-color" style="background:#10b981"></div><span style="color:#065f46">🟢 Tổng thu chưa trừ</span></div>
         <div class="legend-item"><div class="legend-color" style="background:#ef4444"></div><span style="color:#991b1b">🔴 Tổng chi bao gồm các loại</span></div>
         <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span style="color:#92400e">🟡 Dòng tiền nợ lãi phải trả</span></div>
@@ -274,43 +267,58 @@ function dashboard(){
       </div>
 
       <div class="pyramid-container">
-        <svg viewBox="0 0 400 280" class="pyramid-svg">
+        <svg viewBox="0 0 400 300" class="pyramid-svg" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ef4444"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>
+            <linearGradient id="g5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#dc2626"/></linearGradient>
             <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#34d399"/><stop offset="100%" stop-color="#059669"/></linearGradient>
             <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#d97706"/></linearGradient>
             <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#60a5fa"/><stop offset="100%" stop-color="#2563eb"/></linearGradient>
             <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#1e3a8a"/></linearGradient>
           </defs>
 
+          <!-- Layer 5: Đầu cơ -->
           <g class="pyramid-layer">
-            <polygon points="200,12 150,65 250,65" fill="url(#g5)"/>
-            <text x="200" y="38" class="pyramid-label">5. Đầu cơ</text>
-            <text x="200" y="52" class="pyramid-sub">${pct(p5)}</text>
+            <polygon points="200,8 140,70 260,70" fill="url(#g5)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <g class="pyramid-text-group">
+              <text x="200" y="38" fill="#ffffff" font-size="9.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">5. TÀI SẢN ĐẦU CƠ</text>
+              <text x="200" y="52" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p5)} (Tối đa 10%)</text>
+            </g>
           </g>
 
+          <!-- Layer 4: Tăng trưởng -->
           <g class="pyramid-layer">
-            <polygon points="146,69 254,69 292,118 108,118" fill="url(#g4)"/>
-            <text x="200" y="92" class="pyramid-label">4. Tăng trưởng</text>
-            <text x="200" y="106" class="pyramid-sub">${pct(p4)} (Chuẩn 45-60%)</text>
+            <polygon points="136,74 264,74 304,126 96,126" fill="url(#g4)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <g class="pyramid-text-group">
+              <text x="200" y="96" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">4. TÀI SẢN TĂNG TRƯỞNG</text>
+              <text x="200" y="112" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p4)} (Chuẩn 45-60%)</text>
+            </g>
           </g>
 
+          <!-- Layer 3: Thu nhập -->
           <g class="pyramid-layer">
-            <polygon points="104,122 296,122 334,171 66,171" fill="url(#g3)"/>
-            <text x="200" y="144" class="pyramid-label">3. Tài sản thu nhập</text>
-            <text x="200" y="158" class="pyramid-sub">${pct(p3)} (Chuẩn 20-35%)</text>
+            <polygon points="92,130 308,130 348,182 52,182" fill="url(#g3)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <g class="pyramid-text-group">
+              <text x="200" y="152" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">3. TÀI SẢN THU NHẬP</text>
+              <text x="200" y="168" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p3)} (Chuẩn 20-35%)</text>
+            </g>
           </g>
 
+          <!-- Layer 2: Tài sản phải có -->
           <g class="pyramid-layer">
-            <polygon points="62,175 338,175 376,224 24,224" fill="url(#g2)"/>
-            <text x="200" y="197" class="pyramid-label">2. Tài sản phải có</text>
-            <text x="200" y="211" class="pyramid-sub">${pct(p2)} (Chuẩn 10-15%)</text>
+            <polygon points="48,186 352,186 388,238 12,238" fill="url(#g2)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <g class="pyramid-text-group">
+              <text x="200" y="208" fill="#ffffff" font-size="11" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">2. TÀI SẢN PHẢI CÓ</text>
+              <text x="200" y="224" fill="rgba(255,255,255,0.95)" font-size="10" font-weight="700" text-anchor="middle" font-family="-apple-system, sans-serif">${pct(p2)} (Chuẩn 10-15%)</text>
+            </g>
           </g>
 
+          <!-- Layer 1: Năng lực cá nhân -->
           <g class="pyramid-layer">
-            <polygon points="20,228 380,228 400,270 0,270" fill="url(#g1)"/>
-            <text x="200" y="247" class="pyramid-label">1. Nền tảng năng lực cá nhân</text>
-            <text x="200" y="261" class="pyramid-sub">Sức khỏe • Kỹ năng • Mối quan hệ</text>
+            <polygon points="8,242 392,242 400,292 0,292" fill="url(#g1)" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
+            <g class="pyramid-text-group">
+              <text x="200" y="262" fill="#ffffff" font-size="10.5" font-weight="800" text-anchor="middle" font-family="-apple-system, sans-serif">1. NỀN TẢNG NĂNG LỰC CÁ NHÂN</text>
+              <text x="200" y="278" fill="rgba(255,255,255,0.95)" font-size="9" font-weight="600" text-anchor="middle" font-family="-apple-system, sans-serif">Sức khỏe • Kiến thức • Kỹ năng • Mối quan hệ</text>
+            </g>
           </g>
         </svg>
       </div>
@@ -355,9 +363,21 @@ function drawAssetBarChart(id, periodKey = "1Y") {
 
   let milestones = getReportingMilestones(periodKey);
   let pts = milestones.map(m => {
-    let rec = getLatestRecordBefore(m.date);
-    return { label: m.label, val: rec.netAssets / 1e9 };
+    let rec = getExactRecordFor(m.date);
+    return { label: m.label, val: rec ? rec.netAssets / 1e9 : null, date: m.date };
   });
+
+  let validPts = pts.filter(p => p.val !== null);
+  let container = document.getElementById("assetChartContainer");
+  let legend = document.getElementById("assetLegend");
+
+  if (validPts.length === 0) {
+    if (container) container.innerHTML = `<div class="no-data-msg">Chưa có thông tin nhập cho khoảng thời gian này</div>`;
+    if (legend) legend.style.display = "none";
+    return;
+  } else {
+    if (legend) legend.style.display = "flex";
+  }
 
   let d = window.devicePixelRatio || 1;
   let w = canvas.clientWidth || 300;
@@ -371,8 +391,8 @@ function drawAssetBarChart(id, periodKey = "1Y") {
   let plotW = w - pLeft - pRight;
   let plotH = h - pTop - pBottom;
 
-  let maxVal = Math.max(...pts.map(p => p.val), 0.1);
-  let minVal = Math.min(0, ...pts.map(p => p.val));
+  let maxVal = Math.max(...validPts.map(p => p.val), 0.1);
+  let minVal = Math.min(0, ...validPts.map(p => p.val));
 
   ctx.strokeStyle = "#f1f5f9";
   ctx.lineWidth = 1;
@@ -385,21 +405,26 @@ function drawAssetBarChart(id, periodKey = "1Y") {
   let barWidth = (plotW / steps) * 0.45;
   pts.forEach((p, i) => {
     let x = pLeft + (i + 0.5) * (plotW / steps);
-    let yVal = pTop + plotH - ((p.val - minVal) / (maxVal - minVal || 1)) * plotH;
-    let yZero = pTop + plotH - ((0 - minVal) / (maxVal - minVal || 1)) * plotH;
-    
-    let barH = Math.abs(yVal - yZero);
-    let barY = p.val >= 0 ? yVal : yZero;
 
-    ctx.fillStyle = "#3b82f6";
-    ctx.fillRect(x - barWidth / 2, barY, barWidth, barH);
+    if (p.val !== null) {
+      let yVal = pTop + plotH - ((p.val - minVal) / (maxVal - minVal || 1)) * plotH;
+      let yZero = pTop + plotH - ((0 - minVal) / (maxVal - minVal || 1)) * plotH;
+      
+      let barH = Math.abs(yVal - yZero);
+      let barY = p.val >= 0 ? yVal : yZero;
 
-    ctx.font = "9px -apple-system, sans-serif";
-    ctx.fillStyle = "#1e40af";
-    ctx.textAlign = "center";
-    ctx.fillText(p.val.toFixed(2) + " tỷ", x, barY - 4);
+      ctx.fillStyle = "#3b82f6";
+      ctx.fillRect(x - barWidth / 2, barY, barWidth, barH);
+
+      ctx.font = "9px -apple-system, sans-serif";
+      ctx.fillStyle = "#1e40af";
+      ctx.textAlign = "center";
+      ctx.fillText(p.val.toFixed(2) + " tỷ", x, barY - 4);
+    }
 
     ctx.fillStyle = "#64748b";
+    ctx.font = "9px -apple-system, sans-serif";
+    ctx.textAlign = "center";
     ctx.fillText(p.label, x, h - 6);
   });
 }
@@ -409,14 +434,27 @@ function drawCashLineChart(id, periodKey = "1Y") {
   if (!canvas) return;
 
   let milestones = getReportingMilestones(periodKey);
-  let incPts = [], expPts = [], interestPts = [];
-
-  milestones.forEach(m => {
-    let rec = getLatestRecordBefore(m.date);
-    incPts.push(rec.grossIncome / 1e6);
-    expPts.push(rec.totalExpense / 1e6);
-    interestPts.push(rec.interestPaid / 1e6);
+  let ptsData = milestones.map(m => {
+    let rec = getExactRecordFor(m.date);
+    return rec ? {
+      label: m.label,
+      inc: rec.grossIncome / 1e6,
+      exp: rec.totalExpense / 1e6,
+      interest: rec.interestPaid / 1e6
+    } : { label: m.label, inc: null, exp: null, interest: null };
   });
+
+  let validPts = ptsData.filter(p => p.inc !== null);
+  let container = document.getElementById("cashChartContainer");
+  let legend = document.getElementById("cashLegend");
+
+  if (validPts.length === 0) {
+    if (container) container.innerHTML = `<div class="no-data-msg">Chưa có thông tin nhập cho khoảng thời gian này</div>`;
+    if (legend) legend.style.display = "none";
+    return;
+  } else {
+    if (legend) legend.style.display = "flex";
+  }
 
   let d = window.devicePixelRatio || 1;
   let w = canvas.clientWidth || 300;
@@ -430,7 +468,11 @@ function drawCashLineChart(id, periodKey = "1Y") {
   let plotW = w - pLeft - pRight;
   let plotH = h - pTop - pBottom;
 
-  let maxVal = Math.max(...incPts, ...expPts, ...interestPts, 1);
+  let validIncs = validPts.map(p => p.inc);
+  let validExps = validPts.map(p => p.exp);
+  let validInterests = validPts.map(p => p.interest);
+
+  let maxVal = Math.max(...validIncs, ...validExps, ...validInterests, 1);
   let steps = milestones.length - 1;
 
   const getY = (v) => pTop + plotH - (v / maxVal) * plotH;
@@ -442,28 +484,41 @@ function drawCashLineChart(id, periodKey = "1Y") {
     ctx.beginPath(); ctx.moveTo(pLeft, y); ctx.lineTo(w - pRight, y); ctx.stroke();
   }
 
-  const drawLine = (pts, color) => {
+  const drawLine = (key, color) => {
     ctx.strokeStyle = color;
     ctx.lineWidth = 2.2;
+    
+    let drawing = false;
     ctx.beginPath();
-    pts.forEach((v, i) => {
-      let x = pLeft + (steps > 0 ? i * (plotW / steps) : plotW / 2);
-      let y = getY(v);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    ptsData.forEach((p, i) => {
+      if (p[key] !== null) {
+        let x = pLeft + (steps > 0 ? i * (plotW / steps) : plotW / 2);
+        let y = getY(p[key]);
+        if (!drawing) {
+          ctx.moveTo(x, y);
+          drawing = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      } else {
+        drawing = false;
+      }
     });
     ctx.stroke();
 
-    pts.forEach((v, i) => {
-      let x = pLeft + (steps > 0 ? i * (plotW / steps) : plotW / 2);
-      let y = getY(v);
-      ctx.fillStyle = color;
-      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    ptsData.forEach((p, i) => {
+      if (p[key] !== null) {
+        let x = pLeft + (steps > 0 ? i * (plotW / steps) : plotW / 2);
+        let y = getY(p[key]);
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+      }
     });
   };
 
-  drawLine(incPts, "#10b981");
-  drawLine(expPts, "#ef4444");
-  drawLine(interestPts, "#f59e0b");
+  drawLine("inc", "#10b981");
+  drawLine("exp", "#ef4444");
+  drawLine("interest", "#f59e0b");
 
   ctx.font = "9px -apple-system, sans-serif";
   ctx.fillStyle = "#64748b";
